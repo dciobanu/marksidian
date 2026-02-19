@@ -249,27 +249,65 @@ Each open file gets its own `BrowserWindow` (the standard macOS document model).
 
 ### 4.2 IPC Contract
 
-Communication between main and renderer processes uses Electron's `ipcMain`/`ipcRenderer` with a strictly typed contract. All IPC channels are defined in a single shared file.
+Communication between main and renderer processes uses Electron's IPC with a strictly typed contract. All IPC channels are defined in a single shared file.
+
+**Two IPC patterns are used:**
+
+- **Request-response** (`ipcRenderer.invoke` / `ipcMain.handle`): For file operations where the renderer needs a result or error. Returns a Promise. Used for save, save-as, open.
+- **Fire-and-forget** (`ipcRenderer.send` / `ipcMain.on`): For one-way notifications. Used for content-changed, mode changes from menu.
+- **Main → Renderer push** (`webContents.send` / `ipcRenderer.on`): For main process pushing data to a window. Used for file-opened, menu-triggered mode switch.
 
 **File: `src/shared/ipc-channels.ts`**
 
 ```typescript
-// Main → Renderer
-export const IPC = {
-  // File operations
-  FILE_OPENED: 'file:opened',           // { path: string, content: string }
-  FILE_SAVED: 'file:saved',             // { path: string }
-  FILE_SAVE_ERROR: 'file:save-error',   // { error: string }
-
-  // Renderer → Main
-  REQUEST_SAVE: 'file:request-save',    // { content: string }
-  REQUEST_SAVE_AS: 'file:request-save-as', // { content: string }
-  CONTENT_CHANGED: 'file:content-changed', // { isDirty: boolean }
-
-  // View
-  SET_MODE: 'view:set-mode',            // { mode: 'live' | 'source' | 'reading' }
-  SET_THEME: 'view:set-theme',          // { theme: 'light' | 'dark' | 'system' }
+// ── Request-response (invoke/handle) ──
+// Renderer calls, main responds with result or throws
+export const IPC_INVOKE = {
+  SAVE: 'file:save',                // renderer sends { content: string } → main returns { path: string }
+  SAVE_AS: 'file:save-as',          // renderer sends { content: string } → main returns { path: string }
 } as const;
+
+// ── Fire-and-forget (send) ──
+// Renderer notifies main, no response expected
+export const IPC_SEND = {
+  CONTENT_CHANGED: 'file:content-changed',  // { isDirty: boolean }
+  OPEN_EXTERNAL: 'shell:open-external',      // { url: string }
+} as const;
+
+// ── Main → Renderer push (webContents.send) ──
+// Main pushes to renderer
+export const IPC_PUSH = {
+  FILE_OPENED: 'file:opened',       // { path: string, content: string }
+  SET_MODE: 'view:set-mode',        // { mode: 'live' | 'source' | 'reading' }
+  SET_THEME: 'view:set-theme',      // { theme: 'light' | 'dark' | 'system' }
+} as const;
+```
+
+**Main process handler example:**
+
+```typescript
+import { ipcMain } from 'electron';
+
+ipcMain.handle(IPC_INVOKE.SAVE, async (event, { content }: { content: string }) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const filePath = getFilePathForWindow(win);
+  if (!filePath) throw new Error('No file path — use Save As');
+  await atomicWrite(filePath, content);
+  win.setDocumentEdited(false);
+  return { path: filePath };
+});
+```
+
+**Renderer usage (via preload bridge):**
+
+```typescript
+// Clean async/await — no event listener management
+try {
+  const { path } = await window.lume.save(content);
+  // Save succeeded
+} catch (err) {
+  // Save failed — show error
+}
 ```
 
 ### 4.3 Directory Structure
@@ -382,19 +420,18 @@ For heading levels in the editor, Obsidian uses `HyperMD-header-N` classes. Repl
         │
 7. renderer.ts initializes, signals ready via IPC
         │
-8. Main sends FILE_OPENED { path, content } via IPC
+8. Main sends FILE_OPENED { path, content } via webContents.send
         │
 9. renderer.ts creates CM6 EditorView with content as initial doc
         │
 10. User edits → CM6 dispatches transactions → decorations update
         │
-11. On Cmd+S → renderer sends REQUEST_SAVE { content } via IPC
+11. On Cmd+S → renderer calls await window.lume.save(content)
         │
-12. Main process writes content to file path via fs.writeFile
+12. Main process handler writes content atomically via temp+rename
         │
-13. Main sends FILE_SAVED confirmation via IPC
-        │
-14. Renderer clears dirty state
+13. invoke resolves with { path } — renderer clears dirty state
+    (or rejects with error — renderer shows error message)
 ```
 
 ---
@@ -417,57 +454,69 @@ This creates the illusion of WYSIWYG editing while maintaining a plain-text docu
 
 ### 5.2 The Decoration ViewPlugin Pattern
 
-Every Live Preview decoration module follows the same pattern:
+Every Live Preview decoration module follows the same pattern. **Performance rule: decorations must only be computed for visible ranges, never the full document.** Walking the full Lezer tree on every keystroke in a 20,000-word file will drop frames. Use `view.visibleRanges` to clip iteration.
 
 ```typescript
-import { ViewPlugin, ViewUpdate, DecorationSet, Decoration, WidgetType } from '@codemirror/view';
-import { EditorState, Range } from '@codemirror/state';
+import { ViewPlugin, ViewUpdate, DecorationSet, Decoration, WidgetType, EditorView } from '@codemirror/view';
+import { EditorState, Range, RangeSetBuilder } from '@codemirror/state';
 import { syntaxTree } from '@codemirror/language';
 
-// Decoration builder
-function buildDecorations(state: EditorState): DecorationSet {
-  const decorations: Range<Decoration>[] = [];
-  const cursor = state.selection.main;
+// Decoration builder — VIEWPORT ONLY
+function buildDecorations(view: EditorView): DecorationSet {
+  const builder = new RangeSetBuilder<Decoration>();
+  const cursor = view.state.selection.main;
 
-  syntaxTree(state).iterate({
-    enter(node) {
-      // Check if this is the node type we care about
-      if (node.name !== 'StrongEmphasis') return;
+  // CRITICAL: Only iterate visible ranges, not the entire document
+  for (const { from, to } of view.visibleRanges) {
+    syntaxTree(view.state).iterate({
+      from,
+      to,
+      enter(node) {
+        // Check if this is the node type we care about
+        if (node.name !== 'StrongEmphasis') return;
 
-      // Skip if cursor is inside this node
-      if (cursor.from >= node.from && cursor.to <= node.to) return;
+        // Skip if cursor is inside this node
+        if (cursor.from <= node.to && cursor.to >= node.from) return;
 
-      // Hide the opening ** (2 chars)
-      decorations.push(
-        Decoration.replace({}).range(node.from, node.from + 2)
-      );
+        // Hide the opening ** (2 chars)
+        builder.add(node.from, node.from + 2, Decoration.replace({}));
 
-      // Hide the closing **
-      decorations.push(
-        Decoration.replace({}).range(node.to - 2, node.to)
-      );
+        // Style the content between markers as bold
+        builder.add(node.from + 2, node.to - 2, Decoration.mark({ class: 'cm-strong' }));
 
-      // Style the content between markers as bold
-      decorations.push(
-        Decoration.mark({ class: 'cm-strong' }).range(node.from + 2, node.to - 2)
-      );
-    }
-  });
+        // Hide the closing **
+        builder.add(node.to - 2, node.to, Decoration.replace({}));
+      }
+    });
+  }
 
-  return Decoration.set(decorations, true); // true = sort
+  return builder.finish();
 }
 
-// ViewPlugin that rebuilds on every change/selection
-export const boldDecoration = ViewPlugin.define(
-  (view) => ({ decorations: buildDecorations(view.state) }),
-  {
-    decorations: (v) => v.decorations,
-    provide: (plugin) =>
-      EditorView.decorations.of((view) => view.plugin(plugin)?.decorations ?? Decoration.none),
-  }
+// ViewPlugin that rebuilds on relevant changes only
+export const boldDecoration = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+    constructor(view: EditorView) {
+      this.decorations = buildDecorations(view);
+    }
+    update(update: ViewUpdate) {
+      // Rebuild only when document, selection, or viewport changes
+      if (update.docChanged || update.selectionSet || update.viewportChanged) {
+        this.decorations = buildDecorations(update.view);
+      }
+    }
+  },
+  { decorations: (v) => v.decorations }
 );
-// Note: Actual implementation should use the `update` method for efficiency.
 ```
+
+**Performance requirements (non-negotiable):**
+
+1. **Viewport-only tree walking.** Pass `from` and `to` from `view.visibleRanges` to `syntaxTree().iterate()`. Never iterate the full document
+2. **Conditional rebuilding.** Only recompute decorations when `update.docChanged`, `update.selectionSet`, or `update.viewportChanged` is true. Do not rebuild on unrelated state changes
+3. **Use `RangeSetBuilder`.** It produces sorted `DecorationSet` values incrementally, which is more efficient than collecting an array and calling `Decoration.set(array, true)`
+4. **Cache MathJax output.** MathJax rendering is expensive. Cache rendered SVGs keyed by LaTeX string in a `Map<string, SVGElement>`. Invalidate only when the LaTeX content changes
 
 ### 5.3 Decoration Specification Per Markdown Element
 
@@ -537,9 +586,36 @@ Each decoration module must handle exactly these Lezer node types. The node name
 
 | Lezer node | `Image` containing `LinkMark`, `URL` children |
 |---|---|
-| Cursor outside | Replace entire syntax with `Decoration.widget()` containing an `<img>` element. Handle relative paths (resolve against file's directory). Handle broken images gracefully (show alt text + error icon) |
+| Cursor outside | Replace entire syntax with `Decoration.widget()` containing an `<img>` element. Handle broken images gracefully (show alt text + error icon) |
 | Cursor inside | Show raw `![alt](path)` |
 | Sizing | If URL contains `|300` suffix (Obsidian convention), set image width |
+
+**Image path resolution and loading:**
+
+The markdown file is never modified. All path handling happens at render time when constructing the `<img>` element's `src` attribute.
+
+1. **Path resolution.** When the decoration encounters `![](./assets/photo.png)`, resolve the path relative to the open `.md` file's parent directory using Node's `path.resolve()`. This is passed from main → renderer via the `FILE_OPENED` payload (the renderer needs to know the file's directory). This matches Obsidian's behavior and works identically for files created in any editor.
+
+2. **Loading mechanism.** Register a custom protocol in the main process using `protocol.handle()`:
+
+```typescript
+// main process — run once at app startup
+import { protocol, net } from 'electron';
+
+protocol.handle('lume-asset', (request) => {
+  // request.url is "lume-asset:///absolute/path/to/image.png"
+  const filePath = decodeURIComponent(new URL(request.url).pathname);
+  return net.fetch(`file://${filePath}`);
+});
+```
+
+The image widget sets `src="lume-asset:///absolute/resolved/path.png"` instead of a raw `file://` URL. This works reliably regardless of `webSecurity` settings and avoids cross-origin issues that plague direct `file://` loads.
+
+3. **What the user sees.** The markdown on disk stays exactly as written (`![](./assets/photo.png)`). The `lume-asset://` URL exists only in the rendered DOM during editing. Saving the file writes back the original markdown text — CM6's document model is plain text, not HTML.
+
+4. **External URLs.** `![](https://example.com/image.jpg)` — use the URL directly as `src`. No protocol rewrite needed for http/https.
+
+5. **Security.** The protocol handler should validate that the resolved path is a real file (not a directory, not a symlink escape) and that it has an image-like extension. Do not serve arbitrary file types through this protocol.
 
 **Lists (`list.ts`)**
 
@@ -692,7 +768,7 @@ Responsibilities:
 | Operation | Implementation |
 |-----------|---------------|
 | Read file | `fs.promises.readFile(path, 'utf-8')`. Validate UTF-8. Files > 50MB show warning dialog |
-| Write file | `fs.promises.writeFile(path, content, 'utf-8')`. Write to temp file first, then `rename()` for atomicity |
+| Write file | Atomic write: write to a temp file in the same directory, then `fs.promises.rename()` to the target path. This guarantees no data loss if Lume crashes mid-save, because `rename()` is atomic on POSIX filesystems (macOS). **Implementation:** write to `${filePath}.lume-tmp`, then `rename()`. Two options: (a) implement the 10-line wrapper yourself (preferred — zero dependencies), or (b) use the `write-file-atomic` npm package if you want battle-tested edge case handling (adds one micro-dependency). Either is acceptable; option (a) aligns better with the minimal-dependency principle |
 | Watch file | `fs.watch(path)` — detect external changes. Notify renderer, which shows "File changed externally. Reload?" banner |
 | Recent files | Store last 10 opened paths in Electron's `app.getPath('userData')/recent-files.json`. Populate `File → Open Recent` menu |
 
@@ -724,22 +800,31 @@ app.on('open-file', (event, filePath) => {
 
 ### 6.3 Dirty State Management
 
-Track unsaved changes at the renderer level:
+Track unsaved changes at the renderer level using CM6's optimized document comparison:
 
 ```typescript
-let isDirty = false;
-let savedContent = ''; // Content at last save
+import { Text } from '@codemirror/state';
 
-// On CM6 update
-view.dispatch({
-  // After each transaction:
-  isDirty = view.state.doc.toString() !== savedContent;
-  ipcRenderer.send(IPC.CONTENT_CHANGED, { isDirty });
-});
+let savedDoc: Text = Text.empty; // Document state at last save
 
-// On save success
-savedContent = view.state.doc.toString();
-isDirty = false;
+// When file is first opened or saved:
+savedDoc = view.state.doc;
+
+// On CM6 update — use doc.eq() for O(1) structural comparison
+// IMPORTANT: Do NOT use view.state.doc.toString() !== savedString
+// toString() allocates the entire document string on every keystroke.
+// doc.eq() compares internal tree structure without string allocation.
+function checkDirty(view: EditorView): boolean {
+  return !view.state.doc.eq(savedDoc);
+}
+
+// After each transaction, notify main process:
+const isDirty = checkDirty(view);
+window.lume.notifyContentChanged(isDirty);
+
+// On save success:
+savedDoc = view.state.doc;
+window.lume.notifyContentChanged(false);
 ```
 
 Main process responds by updating the window's `documentEdited` property (shows dot on macOS close button) and `representedFilename` (shows filename in title bar with proxy icon):
@@ -749,13 +834,13 @@ win.setDocumentEdited(isDirty);
 win.setRepresentedFilename(filePath);
 ```
 
-### 6.4 Window Close Behavior
+### 6.4 Window Close & App Quit Behavior
 
-On `close` event, if dirty:
+**Single window close** — on `close` event, if dirty:
 
 ```typescript
 win.on('close', (event) => {
-  if (isDirty) {
+  if (win.isDocumentEdited()) {
     event.preventDefault();
     const choice = dialog.showMessageBoxSync(win, {
       type: 'question',
@@ -771,6 +856,66 @@ win.on('close', (event) => {
   }
 });
 ```
+
+**App quit (`Cmd+Q`) with multiple dirty windows:**
+
+When the user quits the app, macOS expects each dirty window to prompt individually. The main process must intercept the quit sequence:
+
+```typescript
+let isQuitting = false;
+
+app.on('before-quit', (event) => {
+  isQuitting = true;
+});
+
+// Each window's 'close' handler checks isQuitting.
+// If any window cancels (user clicks Cancel), abort the entire quit:
+win.on('close', (event) => {
+  if (win.isDocumentEdited()) {
+    event.preventDefault();
+    const choice = dialog.showMessageBoxSync(win, { /* same dialog as above */ });
+
+    if (choice === 0) {
+      // Save, then close. If this was a quit sequence, closing the last
+      // window will trigger app quit automatically.
+      save().then(() => win.destroy());
+    } else if (choice === 1) {
+      win.destroy(); // Discard changes
+    } else {
+      // Cancel — abort the quit sequence entirely
+      if (isQuitting) {
+        isQuitting = false;
+        app.relaunch(); // Not needed — just prevent quit
+      }
+    }
+  }
+});
+```
+
+The quit sequence flows: `Cmd+Q` → `before-quit` fires → Electron closes each window in order → each dirty window's `close` handler fires → if any window's user clicks Cancel, stop closing further windows. Electron handles the sequencing — you just need to `event.preventDefault()` in the `close` handler.
+
+### 6.5 Native Menu Roles & Keyboard Shortcuts
+
+The macOS Edit menu **must** use Electron's built-in `role` property for standard actions. Without roles, `Cmd+C`/`Cmd+V`/`Cmd+Z` etc. will beep or fail when focus is outside the CM6 editor (e.g., during a dialog, or when the title bar is focused).
+
+```typescript
+const editMenu: Electron.MenuItemConstructorOptions = {
+  label: 'Edit',
+  submenu: [
+    { role: 'undo' },         // Forwards to WebContents.undo()
+    { role: 'redo' },         // Forwards to WebContents.redo()
+    { type: 'separator' },
+    { role: 'cut' },
+    { role: 'copy' },
+    { role: 'paste' },
+    { role: 'selectAll' },
+  ],
+};
+```
+
+**How this interacts with CM6:** When the CM6 editor is focused, it intercepts `Cmd+Z` via its own keymap and manages its internal undo history. The Electron `role: 'undo'` command never reaches CM6 in that case — CM6 handles it first. When CM6 is *not* focused (e.g., user is in a find/replace dialog input), the role-based menu command handles undo for that native input. This dual-layer behavior is correct and matches how Obsidian works.
+
+Custom shortcuts (like `Cmd+E` for mode toggle, `Cmd+B` for bold) use standard `accelerator` properties on menu items and send IPC messages or `webContents.send` to the renderer.
 
 ---
 
@@ -1300,39 +1445,36 @@ const win = new BrowserWindow({
     preload: path.join(__dirname, 'preload.js'),
     contextIsolation: true,       // Renderer cannot access Node.js directly
     nodeIntegration: false,        // No require() in renderer
-    sandbox: false,                // Needed for preload script IPC
+    sandbox: true,                 // Hardened sandbox — preload IPC works fine with this enabled
   },
 });
 ```
 
-The **preload script** (`src/main/preload.ts`) exposes a minimal API to the renderer:
+The **preload script** (`src/main/preload.ts`) exposes a minimal API to the renderer via `contextBridge`. File operations use the `invoke` pattern (returns Promise), notifications use `send` (fire-and-forget), and main-to-renderer pushes use event listeners.
 
 ```typescript
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('lume', {
-  // File operations
-  onFileOpened: (cb: (data: { path: string; content: string }) => void) =>
-    ipcRenderer.on('file:opened', (_, data) => cb(data)),
-  onFileSaved: (cb: (data: { path: string }) => void) =>
-    ipcRenderer.on('file:saved', (_, data) => cb(data)),
-  onFileSaveError: (cb: (data: { error: string }) => void) =>
-    ipcRenderer.on('file:save-error', (_, data) => cb(data)),
-  requestSave: (content: string) =>
-    ipcRenderer.send('file:request-save', { content }),
-  requestSaveAs: (content: string) =>
-    ipcRenderer.send('file:request-save-as', { content }),
+  // ── Request-response (invoke → Promise) ──
+  save: (content: string): Promise<{ path: string }> =>
+    ipcRenderer.invoke('file:save', { content }),
+  saveAs: (content: string): Promise<{ path: string }> =>
+    ipcRenderer.invoke('file:save-as', { content }),
+
+  // ── Fire-and-forget (send) ──
   notifyContentChanged: (isDirty: boolean) =>
     ipcRenderer.send('file:content-changed', { isDirty }),
+  openExternal: (url: string) =>
+    ipcRenderer.send('shell:open-external', { url }),
 
-  // View
+  // ── Main → Renderer listeners ──
+  onFileOpened: (cb: (data: { path: string; content: string }) => void) =>
+    ipcRenderer.on('file:opened', (_, data) => cb(data)),
   onSetMode: (cb: (data: { mode: string }) => void) =>
     ipcRenderer.on('view:set-mode', (_, data) => cb(data)),
   onSetTheme: (cb: (data: { theme: string }) => void) =>
     ipcRenderer.on('view:set-theme', (_, data) => cb(data)),
-
-  // Shell
-  openExternal: (url: string) => ipcRenderer.send('shell:open-external', { url }),
 });
 ```
 
@@ -1352,10 +1494,10 @@ These are decisions that the spec author considered non-blocking and intentional
 
 1. **Table rendering complexity:** Full `<table>` widget replacement is complex. An acceptable v0.1 alternative is tab-aligned source display with header bold — decide based on time available
 2. **MathJax loading strategy:** MathJax 3 is large (~2MB). Options: bundle it (increases app size), lazy-load on first `$` encounter (delay on first render), or load at startup (slower launch). Recommend: lazy-load
-3. **Image path resolution:** When the user types `![](./image.png)`, how should the relative path resolve? Options: relative to the `.md` file's directory (recommended, matches Obsidian), or relative to CWD. Document the choice
-4. **Undo granularity:** CM6's default undo grouping may differ from Obsidian's. Test and adjust `historyMinDepth` if needed
-5. **Font picker:** Obsidian has a font picker in settings. Defer for v0.1? Or add a simple `View → Font` menu with system font dialog?
-6. **Window state persistence:** Remember window position/size between launches? Recommended: yes, via `electron-window-state` or manual `localStorage`
+3. **Undo granularity:** CM6's default undo grouping may differ from Obsidian's. Test and adjust `historyMinDepth` if needed
+4. **Font picker:** Obsidian has a font picker in settings. Defer for v0.1? Or add a simple `View → Font` menu with system font dialog?
+5. **Window state persistence:** Remember window position/size between launches? Recommended: yes, via `electron-window-state` or manual JSON in `app.getPath('userData')`
+6. **Atomic write implementation:** The spec gives two options for atomic file saves (hand-rolled 10-line wrapper vs. `write-file-atomic` package). Choose based on your comfort with edge cases like cross-device renames on network mounts
 
 ### Appendix F: License
 
