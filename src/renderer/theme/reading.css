@@ -1,0 +1,119 @@
+.markdown-reading-view {
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.markdown-preview-view {
+  font-family: var(--font-text-theme);
+  font-size: var(--font-text-size);
+  line-height: var(--line-height-normal);
+}
+
+.readable-line-width .markdown-preview-view {
+  max-width: var(--file-line-width);
+  margin: 0 auto;
+  padding: 0 2em;
+}
+
+.markdown-preview-view h1 { font-size: var(--h1-size); font-weight: var(--h1-weight); color: var(--h1-color); margin: 1em 0 0.5em; }
+.markdown-preview-view h2 { font-size: var(--h2-size); font-weight: var(--h2-weight); color: var(--h2-color); margin: 0.8em 0 0.4em; }
+.markdown-preview-view h3 { font-size: var(--h3-size); font-weight: var(--h3-weight); color: var(--h3-color); margin: 0.6em 0 0.3em; }
+.markdown-preview-view h4 { font-size: var(--h4-size); font-weight: var(--h4-weight); color: var(--h4-color); margin: 0.5em 0 0.25em; }
+.markdown-preview-view h5 { font-size: var(--h5-size); font-weight: var(--h5-weight); color: var(--h5-color); margin: 0.4em 0 0.2em; }
+.markdown-preview-view h6 { font-size: var(--h6-size); font-weight: var(--h6-weight); color: var(--h6-color); margin: 0.4em 0 0.2em; }
+
+.markdown-preview-view p { margin: 0.5em 0; }
+
+.markdown-preview-view a {
+  color: var(--text-accent);
+  text-decoration: none;
+}
+.markdown-preview-view a:hover { text-decoration: underline; }
+
+.markdown-preview-view strong { font-weight: 700; }
+.markdown-preview-view em { font-style: italic; }
+.markdown-preview-view del { text-decoration: line-through; }
+
+.markdown-preview-view mark {
+  background-color: hsla(60, 100%, 50%, 0.4);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+.markdown-preview-view code {
+  font-family: var(--font-monospace-theme);
+  font-size: 0.9em;
+  background-color: var(--code-background);
+  color: var(--code-normal);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.markdown-preview-view pre {
+  background-color: var(--code-background);
+  border-radius: 4px;
+  padding: 1em;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+
+.markdown-preview-view pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.9em;
+}
+
+.markdown-preview-view blockquote {
+  border-left: 3px solid var(--interactive-accent);
+  padding-left: 1em;
+  margin: 0.5em 0;
+  color: var(--text-normal);
+}
+
+.markdown-preview-view ul, .markdown-preview-view ol {
+  padding-left: 2em;
+  margin: 0.5em 0;
+}
+
+.markdown-preview-view li { margin: 0.2em 0; }
+
+.markdown-preview-view input[type="checkbox"] {
+  accent-color: var(--interactive-accent);
+  margin-right: 4px;
+}
+
+.markdown-preview-view hr {
+  border: none;
+  border-top: 1px solid var(--divider-color);
+  margin: 1.5em 0;
+}
+
+.markdown-preview-view table {
+  border-collapse: collapse;
+  width: auto;
+  margin: 0.5em 0;
+}
+
+.markdown-preview-view th, .markdown-preview-view td {
+  border: 1px solid var(--divider-color);
+  padding: 6px 12px;
+  text-align: left;
+}
+
+.markdown-preview-view th {
+  font-weight: 700;
+  background-color: var(--background-secondary);
+}
+
+.markdown-preview-view img {
+  max-width: 100%;
+  border-radius: 4px;
+}
+
+.markdown-preview-view sup {
+  font-size: 0.8em;
+}
+
+.markdown-preview-view sup a {
+  color: var(--text-accent);
+}

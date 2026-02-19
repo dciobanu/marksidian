@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; img-src 'self' lume-asset: https: data:; script-src 'self';">
+  <title>Lume</title>
+  <link rel="stylesheet" href="theme/variables.css">
+  <link rel="stylesheet" href="theme/base.css">
+  <link rel="stylesheet" href="theme/editor.css">
+  <link rel="stylesheet" href="theme/live-preview.css">
+  <link rel="stylesheet" href="theme/reading.css">
+  <link rel="stylesheet" href="theme/status-bar.css">
+</head>
+<body class="theme-light">
+  <div class="app-container">
+    <div class="workspace">
+      <div class="markdown-source-view is-live-preview" id="editor-container">
+        <!-- CodeMirror 6 editor mounts here -->
+      </div>
+      <div class="markdown-reading-view" id="reading-container" style="display: none;">
+        <div class="markdown-preview-view markdown-rendered" id="reading-content">
+        </div>
+      </div>
+    </div>
+    <div class="status-bar" id="status-bar">
+      <div class="status-bar-item" id="status-position">Ln 1, Col 1</div>
+      <div class="status-bar-item" id="status-words">0 words</div>
+      <div class="status-bar-item" id="status-mode">Live</div>
+    </div>
+  </div>
+  <script src="../../dist/renderer/renderer.js"></script>
+</body>
+</html>

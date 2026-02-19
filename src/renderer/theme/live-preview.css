@@ -1,0 +1,205 @@
+/* Heading decorations */
+.HyperMD-header-1 { font-size: var(--h1-size); font-weight: var(--h1-weight); color: var(--h1-color); }
+.HyperMD-header-2 { font-size: var(--h2-size); font-weight: var(--h2-weight); color: var(--h2-color); }
+.HyperMD-header-3 { font-size: var(--h3-size); font-weight: var(--h3-weight); color: var(--h3-color); }
+.HyperMD-header-4 { font-size: var(--h4-size); font-weight: var(--h4-weight); color: var(--h4-color); }
+.HyperMD-header-5 { font-size: var(--h5-size); font-weight: var(--h5-weight); color: var(--h5-color); }
+.HyperMD-header-6 { font-size: var(--h6-size); font-weight: var(--h6-weight); color: var(--h6-color); }
+
+/* Inline formatting */
+.cm-lp-strong { font-weight: 700; }
+.cm-lp-em { font-style: italic; }
+.cm-lp-strikethrough { text-decoration: line-through; }
+
+.cm-lp-highlight {
+  background-color: hsla(60, 100%, 50%, 0.4);
+  border-radius: 2px;
+  padding: 1px 0;
+}
+
+/* Inline code */
+.cm-lp-inline-code {
+  font-family: var(--font-monospace-theme);
+  font-size: 0.9em;
+  background-color: var(--code-background);
+  color: var(--code-normal);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+/* Code block */
+.cm-lp-code-block {
+  background-color: var(--code-background);
+  border-radius: 4px;
+  padding: 0 0.5em;
+}
+
+.cm-lp-code-block .cm-line {
+  font-family: var(--font-monospace-theme);
+  font-size: 0.9em;
+}
+
+.cm-lp-code-lang {
+  display: inline-block;
+  font-family: var(--font-monospace-theme);
+  font-size: 0.75em;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  user-select: none;
+}
+
+/* Links */
+.cm-lp-link {
+  color: var(--text-accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cm-lp-link:hover {
+  text-decoration: underline;
+}
+
+/* Images */
+.cm-lp-image-widget {
+  display: block;
+  max-width: 100%;
+  margin: 0.5em 0;
+}
+
+.cm-lp-image-widget img {
+  max-width: 100%;
+  border-radius: 4px;
+}
+
+.cm-lp-image-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 4px 8px;
+  background: var(--code-background);
+  border-radius: 4px;
+}
+
+/* Lists */
+.cm-lp-bullet {
+  display: inline-block;
+  width: 1.5em;
+  text-align: center;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+/* Task checkboxes */
+.cm-lp-checkbox {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  vertical-align: middle;
+  accent-color: var(--interactive-accent);
+}
+
+/* Blockquotes */
+.cm-lp-blockquote {
+  border-left: 3px solid var(--interactive-accent);
+  padding-left: 1em;
+  color: var(--text-normal);
+}
+
+/* Horizontal rule */
+.cm-lp-hr-widget {
+  display: block;
+  border: none;
+  border-top: 1px solid var(--divider-color);
+  margin: 1em 0;
+}
+
+/* Math */
+.cm-lp-math-widget {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.cm-lp-math-widget svg {
+  vertical-align: middle;
+}
+
+.cm-lp-math-block-widget {
+  display: block;
+  text-align: center;
+  margin: 0.5em 0;
+}
+
+.cm-lp-math-error {
+  color: var(--color-red);
+  font-family: var(--font-monospace-theme);
+  font-size: 0.85em;
+}
+
+/* Footnotes */
+.cm-lp-footnote-ref {
+  color: var(--text-accent);
+  font-size: 0.8em;
+  vertical-align: super;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.cm-lp-footnote-ref:hover {
+  text-decoration: underline;
+}
+
+/* Frontmatter */
+.cm-lp-frontmatter {
+  background-color: var(--code-background);
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin-bottom: 0.5em;
+}
+
+.cm-lp-frontmatter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 0.85em;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-interface-theme);
+}
+
+.cm-lp-frontmatter-toggle:hover {
+  color: var(--text-normal);
+}
+
+/* Table */
+.cm-lp-table-widget {
+  width: 100%;
+  margin: 0.5em 0;
+  overflow-x: auto;
+}
+
+.cm-lp-table-widget table {
+  border-collapse: collapse;
+  width: auto;
+  min-width: 50%;
+  font-size: inherit;
+}
+
+.cm-lp-table-widget th,
+.cm-lp-table-widget td {
+  border: 1px solid var(--divider-color);
+  padding: 6px 12px;
+  text-align: left;
+}
+
+.cm-lp-table-widget th {
+  font-weight: 700;
+  background-color: var(--background-secondary);
+}
+
+.cm-lp-table-widget tr:hover {
+  background-color: var(--background-secondary);
+}

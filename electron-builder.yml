@@ -1,0 +1,38 @@
+appId: com.lume.editor
+productName: Lume
+copyright: Copyright © 2026 Lume Contributors
+
+directories:
+  output: release
+  buildResources: resources
+
+files:
+  - dist/**/*
+  - src/renderer/index.html
+  - src/renderer/theme/**/*.css
+  - "!node_modules"
+
+mac:
+  target:
+    - target: dmg
+      arch: [universal]
+    - target: zip
+      arch: [universal]
+  category: public.app-category.developer-tools
+  icon: resources/icon.icns
+  darkModeSupport: true
+  fileAssociations:
+    - ext: md
+      name: Markdown Document
+      role: Editor
+  hardenedRuntime: true
+  gatekeeperAssess: false
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
