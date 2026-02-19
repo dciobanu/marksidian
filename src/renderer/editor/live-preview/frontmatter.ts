@@ -19,25 +19,37 @@ class FrontmatterWidget extends WidgetType {
 function buildDecorations(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
 
-  // Frontmatter must be at the very start of the document
   const tree = syntaxTree(view.state);
   const cursor = tree.cursor();
 
-  // Walk top-level looking for FrontMatter
-  cursor.firstChild();
-  do {
-    if (cursor.name === 'FrontMatter') {
-      if (isCursorInRange(view.state, cursor.from, cursor.to)) break;
+  if (cursor.firstChild()) {
+    do {
+      if (cursor.name === 'FrontMatter') {
+        if (isCursorInRange(view.state, cursor.from, cursor.to)) break;
 
-      builder.add(cursor.from, cursor.to, Decoration.replace({
-        widget: new FrontmatterWidget(),
-        block: true,
-      }));
+        // Use per-line approach: hide each line individually, show widget on first line.
+        // This avoids the block-replace cursor issues.
+        const startLine = view.state.doc.lineAt(cursor.from);
+        const endLine = view.state.doc.lineAt(cursor.to);
+
+        for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
+          const line = view.state.doc.line(lineNum);
+          if (lineNum === startLine.number) {
+            // First line: replace with the widget
+            builder.add(line.from, line.to, Decoration.replace({
+              widget: new FrontmatterWidget(),
+            }));
+          } else {
+            // Remaining lines: hide
+            builder.add(line.from, line.to, Decoration.replace({}));
+          }
+        }
+        break;
+      }
+      // Frontmatter must be the first element
       break;
-    }
-    // Frontmatter must be the first element
-    break;
-  } while (cursor.nextSibling());
+    } while (cursor.nextSibling());
+  }
 
   return builder.finish();
 }

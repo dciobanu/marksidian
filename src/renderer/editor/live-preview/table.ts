@@ -1,76 +1,34 @@
-import { ViewPlugin, ViewUpdate, DecorationSet, Decoration, EditorView, WidgetType } from '@codemirror/view';
+import { ViewPlugin, ViewUpdate, DecorationSet, Decoration, EditorView } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/state';
 import { syntaxTree } from '@codemirror/language';
 import { isCursorInRange } from './utils';
 
-interface TableData {
-  headers: string[];
-  alignments: ('left' | 'center' | 'right')[];
-  rows: string[][];
-}
-
-class TableWidget extends WidgetType {
-  constructor(readonly data: TableData) { super(); }
-
-  toDOM(): HTMLElement {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'cm-lp-table-widget';
-
-    const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-
-    for (let i = 0; i < this.data.headers.length; i++) {
-      const th = document.createElement('th');
-      th.textContent = this.data.headers[i].trim();
-      if (this.data.alignments[i]) {
-        th.style.textAlign = this.data.alignments[i];
-      }
-      headerRow.appendChild(th);
-    }
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    const tbody = document.createElement('tbody');
-    for (const row of this.data.rows) {
-      const tr = document.createElement('tr');
-      for (let i = 0; i < row.length; i++) {
-        const td = document.createElement('td');
-        td.textContent = row[i].trim();
-        if (this.data.alignments[i]) {
-          td.style.textAlign = this.data.alignments[i];
-        }
-        tr.appendChild(td);
-      }
-      tbody.appendChild(tr);
-    }
-    table.appendChild(tbody);
-    wrapper.appendChild(table);
-    return wrapper;
-  }
-
-  eq(other: TableWidget) {
-    return JSON.stringify(this.data) === JSON.stringify(other.data);
-  }
-}
-
-function parseAlignment(cell: string): 'left' | 'center' | 'right' {
-  const trimmed = cell.trim();
-  const left = trimmed.startsWith(':');
-  const right = trimmed.endsWith(':');
-  if (left && right) return 'center';
-  if (right) return 'right';
-  return 'left';
-}
-
 function parsePipeRow(text: string): string[] {
-  // Remove leading/trailing pipes and split
   let trimmed = text.trim();
   if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
   if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
   return trimmed.split('|');
 }
 
+function isDelimiterRow(text: string): boolean {
+  const cells = parsePipeRow(text);
+  return cells.length > 0 && cells.every((c) => /^\s*:?-+:?\s*$/.test(c));
+}
+
+/**
+ * Table decoration using per-line styling instead of a single block replace.
+ *
+ * A block Decoration.replace() over a multi-line range causes CM6 to treat
+ * the entire table as an atomic widget. This breaks cursor placement, Enter
+ * key handling, and click positioning — the cursor gets stuck or jumps to
+ * wrong regions because CM6 cannot resolve positions inside a replaced range.
+ *
+ * Instead we apply line-level decorations:
+ *  - All table lines get a table styling class
+ *  - The header row gets a bold class
+ *  - The delimiter row (| -- | -- |) is hidden via a single-line replace
+ *  - Pipe characters at line edges are hidden for cleaner appearance
+ */
 function buildDecorations(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
 
@@ -82,25 +40,27 @@ function buildDecorations(view: EditorView): DecorationSet {
         if (node.name !== 'Table') return;
         if (isCursorInRange(view.state, node.from, node.to)) return;
 
-        const text = view.state.doc.sliceString(node.from, node.to);
-        const lines = text.split('\n');
-        if (lines.length < 2) return;
+        const startLine = view.state.doc.lineAt(node.from);
+        const endLine = view.state.doc.lineAt(node.to);
 
-        const headers = parsePipeRow(lines[0]);
-        const delimCells = parsePipeRow(lines[1]);
-        const alignments = delimCells.map(parseAlignment);
-        const rows: string[][] = [];
+        for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
+          const line = view.state.doc.line(lineNum);
+          const lineText = line.text.trim();
+          if (!lineText) continue;
 
-        for (let i = 2; i < lines.length; i++) {
-          if (lines[i].trim()) {
-            rows.push(parsePipeRow(lines[i]));
+          const lineIndex = lineNum - startLine.number;
+
+          // Style every table line
+          builder.add(line.from, line.from, Decoration.line({ class: 'cm-lp-table-line' }));
+
+          if (lineIndex === 0) {
+            // Header row
+            builder.add(line.from, line.from, Decoration.line({ class: 'cm-lp-table-header' }));
+          } else if (lineIndex === 1 && isDelimiterRow(lineText)) {
+            // Delimiter row — hide it (single-line replace is safe)
+            builder.add(line.from, line.to, Decoration.replace({}));
           }
         }
-
-        builder.add(node.from, node.to, Decoration.replace({
-          widget: new TableWidget({ headers, alignments, rows }),
-          block: true,
-        }));
       },
     });
   }
