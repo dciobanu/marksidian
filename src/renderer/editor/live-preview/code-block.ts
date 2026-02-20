@@ -26,31 +26,33 @@ function buildDecorations(view: EditorView): DecorationSet {
 
         const cursorInside = isCursorInRange(view.state, node.from, node.to);
 
-        // Apply code block background to all lines in the block
         const startLine = view.state.doc.lineAt(node.from);
         const endLine = view.state.doc.lineAt(node.to);
 
-        for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
-          const line = view.state.doc.line(lineNum);
-          builder.add(line.from, line.from, Decoration.line({ class: 'cm-lp-code-block' }));
+        // When cursor is inside, just apply background class to all lines
+        if (cursorInside) {
+          for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
+            const line = view.state.doc.line(lineNum);
+            builder.add(line.from, line.from, Decoration.line({ class: 'cm-lp-code-block' }));
+          }
+          return;
         }
-
-        if (cursorInside) return;
 
         // Find CodeInfo (language) and CodeMark (fences)
         let lang = '';
         const nodeRef = node.node;
         const cursor = nodeRef.cursor();
-        let firstFenceFrom = -1;
-        let lastFenceFrom = -1;
+        let firstFenceLine = -1;
+        let lastFenceLine = -1;
 
         if (cursor.firstChild()) {
           do {
             if (cursor.name === 'CodeMark') {
-              if (firstFenceFrom === -1) {
-                firstFenceFrom = cursor.from;
+              const fenceLineNum = view.state.doc.lineAt(cursor.from).number;
+              if (firstFenceLine === -1) {
+                firstFenceLine = fenceLineNum;
               } else {
-                lastFenceFrom = cursor.from;
+                lastFenceLine = fenceLineNum;
               }
             } else if (cursor.name === 'CodeInfo') {
               lang = view.state.doc.sliceString(cursor.from, cursor.to).trim();
@@ -58,18 +60,24 @@ function buildDecorations(view: EditorView): DecorationSet {
           } while (cursor.nextSibling());
         }
 
-        // Hide opening fence line
-        if (firstFenceFrom !== -1) {
-          const fenceLine = view.state.doc.lineAt(firstFenceFrom);
-          builder.add(fenceLine.from, fenceLine.to, Decoration.replace({
-            widget: lang ? new CodeLangWidget(lang) : undefined,
-          }));
-        }
+        // Apply decorations per-line in document order to satisfy RangeSetBuilder
+        for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
+          const line = view.state.doc.line(lineNum);
 
-        // Hide closing fence line
-        if (lastFenceFrom !== -1) {
-          const fenceLine = view.state.doc.lineAt(lastFenceFrom);
-          builder.add(fenceLine.from, fenceLine.to, Decoration.replace({}));
+          // Line class for background
+          builder.add(line.from, line.from, Decoration.line({ class: 'cm-lp-code-block' }));
+
+          // Opening fence line: replace with language widget
+          if (lineNum === firstFenceLine) {
+            builder.add(line.from, line.to, Decoration.replace({
+              widget: lang ? new CodeLangWidget(lang) : undefined,
+            }));
+          }
+
+          // Closing fence line: hide
+          if (lineNum === lastFenceLine) {
+            builder.add(line.from, line.to, Decoration.replace({}));
+          }
         }
       },
     });

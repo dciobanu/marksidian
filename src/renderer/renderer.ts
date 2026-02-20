@@ -1,5 +1,6 @@
 import {
   createEditor,
+  getEditorView,
   setEditorContent,
   getEditorContent,
   isDirty,
@@ -36,6 +37,19 @@ prefersDark.addEventListener('change', (e) => {
 
 // Create the editor
 createEditor(editorContainer);
+
+// Expose editor API for E2E testing (switchToMode added below after definition)
+(window as any).__lume = {
+  getEditorView,
+  setEditorContent,
+  getEditorContent,
+  isDirty,
+  markSaved,
+  setMode,
+  getMode,
+  getCursorPosition,
+  getWordCount,
+};
 
 // Track zoom level
 let zoomLevel = 0;
@@ -99,6 +113,9 @@ function switchToMode(mode: EditorMode): void {
     mode,
   });
 }
+
+// Add switchToMode to test API
+(window as any).__lume.switchToMode = switchToMode;
 
 // Save helper
 async function doSave(): Promise<void> {

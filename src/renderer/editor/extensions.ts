@@ -8,6 +8,7 @@ import { search, searchKeymap } from '@codemirror/search';
 import { keymap } from '@codemirror/view';
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { GFM } from '@lezer/markdown';
+import { Frontmatter } from './live-preview/frontmatter-parser';
 import { livePreviewExtensions } from './live-preview/decorations';
 import { customKeymap } from './keymaps';
 
@@ -30,7 +31,7 @@ function baseExtensions(): Extension[] {
     markdown({
       base: markdownLanguage,
       codeLanguages: languages,
-      extensions: [GFM],
+      extensions: [GFM, Frontmatter],
     }),
     keymap.of([
       ...closeBracketsKeymap,

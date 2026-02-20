@@ -16,7 +16,8 @@
     "start": "electron dist/main/main.js",
     "pack": "electron-builder --mac --config electron-builder.yml",
     "pack:dmg": "electron-builder --mac dmg --config electron-builder.yml",
-    "pack:zip": "electron-builder --mac zip --config electron-builder.yml"
+    "pack:zip": "electron-builder --mac zip --config electron-builder.yml",
+    "test:e2e": "npx playwright test"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.0",
@@ -33,12 +34,14 @@
     "prismjs": "^1.29.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/markdown-it": "^14.1.0",
     "@types/node": "^22.0.0",
     "@types/prismjs": "^1.26.0",
-    "esbuild": "^0.25.0",
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0",
+    "esbuild": "^0.25.0",
+    "playwright": "^1.58.2",
     "typescript": "^5.8.0"
   }
 }
