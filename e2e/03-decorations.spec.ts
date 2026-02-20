@@ -567,6 +567,42 @@ test.describe('Math widgets', () => {
     }
     // If no math widget rendered (MathJax not loaded), test passes vacuously
   });
+
+  test('dollar amounts are NOT treated as inline math', async () => {
+    // This text contains currency amounts — none should be treated as math
+    const text = '**Pricing:** $39/user/month or $19/user/month. Total: $1B+ ARR, $29.3B valuation.';
+    await setDoc(page, text);
+    await setCursor(page, 0);
+    await page.waitForTimeout(300);
+
+    // No math widget should render for currency amounts
+    const hasMathWidget = await editorHas(page, '.cm-lp-math-widget');
+    expect(hasMathWidget).toBe(false);
+
+    // No math error spans either (red text)
+    const hasMathError = await editorHas(page, '.cm-lp-math-error');
+    expect(hasMathError).toBe(false);
+  });
+
+  test('legitimate math with variables still works as inline math', async () => {
+    await setDoc(page, 'The formula $x + y = z$ is simple');
+    await setCursor(page, 0);
+
+    // Math widget should render for legitimate math (may need time for MathJax)
+    await expect.poll(async () => {
+      return await editorHas(page, '.cm-lp-math-widget');
+    }, { timeout: 3000 }).toBe(true);
+  });
+
+  test('dollar with trailing space is NOT math', async () => {
+    // Opening $ followed by space should not be math
+    await setDoc(page, 'I have $ 50 in my wallet');
+    await setCursor(page, 0);
+    await page.waitForTimeout(300);
+
+    const hasMathWidget = await editorHas(page, '.cm-lp-math-widget');
+    expect(hasMathWidget).toBe(false);
+  });
 });
 
 // ── Code block readability ──────────────────────────────────────
