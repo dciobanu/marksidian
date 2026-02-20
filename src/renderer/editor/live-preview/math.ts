@@ -75,8 +75,8 @@ function renderMath(latex: string, display: boolean): HTMLElement {
 }
 
 class InlineMathWidget extends WidgetType {
-  constructor(readonly latex: string) { super(); }
-  toDOM(): HTMLElement {
+  constructor(readonly latex: string, readonly from: number) { super(); }
+  toDOM(view: EditorView): HTMLElement {
     const wrapper = document.createElement('span');
     wrapper.className = 'cm-lp-math-widget';
     if (mathjaxReady) {
@@ -88,14 +88,20 @@ class InlineMathWidget extends WidgetType {
         wrapper.appendChild(renderMath(this.latex, false));
       });
     }
+    wrapper.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      view.dispatch({ selection: { anchor: this.from } });
+      view.focus();
+    });
     return wrapper;
   }
   eq(other: InlineMathWidget) { return this.latex === other.latex; }
+  ignoreEvent() { return false; }
 }
 
 class BlockMathWidget extends WidgetType {
-  constructor(readonly latex: string) { super(); }
-  toDOM(): HTMLElement {
+  constructor(readonly latex: string, readonly from: number) { super(); }
+  toDOM(view: EditorView): HTMLElement {
     const wrapper = document.createElement('div');
     wrapper.className = 'cm-lp-math-block-widget';
     if (mathjaxReady) {
@@ -107,9 +113,15 @@ class BlockMathWidget extends WidgetType {
         wrapper.appendChild(renderMath(this.latex, true));
       });
     }
+    wrapper.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      view.dispatch({ selection: { anchor: this.from } });
+      view.focus();
+    });
     return wrapper;
   }
   eq(other: BlockMathWidget) { return this.latex === other.latex; }
+  ignoreEvent() { return false; }
 }
 
 // Regex-based parsing since @lezer/markdown doesn't have math support
@@ -136,7 +148,7 @@ function buildDecorations(view: EditorView): DecorationSet {
 
       const latex = match[1].trim();
       builder.add(start, end, Decoration.replace({
-        widget: new BlockMathWidget(latex),
+        widget: new BlockMathWidget(latex, start),
       }));
     }
 
@@ -153,7 +165,7 @@ function buildDecorations(view: EditorView): DecorationSet {
 
       const latex = match[1];
       builder.add(start, end, Decoration.replace({
-        widget: new InlineMathWidget(latex),
+        widget: new InlineMathWidget(latex, start),
       }));
     }
   }

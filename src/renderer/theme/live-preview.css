@@ -32,11 +32,22 @@
   background-color: var(--code-background);
   border-radius: 4px;
   padding: 0 0.5em;
+  color: var(--code-normal);
 }
 
-.cm-lp-code-block .cm-line {
+/* Decoration.line() adds cm-lp-code-block TO the .cm-line element itself,
+   so we use compound selectors (no space) — not descendant selectors. */
+.cm-line.cm-lp-code-block {
   font-family: var(--font-monospace-theme);
   font-size: 0.9em;
+  color: var(--code-normal);
+}
+
+/* Reset syntax highlighting colors inside code blocks so they remain
+   readable on the code-background (especially in dark mode).
+   The !important is needed to override defaultHighlightStyle's inline-generated classes. */
+.cm-line.cm-lp-code-block * {
+  color: inherit !important;
 }
 
 .cm-lp-code-lang {

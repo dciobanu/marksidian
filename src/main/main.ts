@@ -1,4 +1,4 @@
-import { app, ipcMain, BrowserWindow, dialog, protocol, net, shell } from 'electron';
+import { app, ipcMain, BrowserWindow, dialog, protocol, net, shell, Menu } from 'electron';
 import * as path from 'path';
 import { writeFile } from './file-manager';
 import {
@@ -116,4 +116,19 @@ ipcMain.on(IPC_SEND.OPEN_EXTERNAL, (_event, { url }: { url: string }) => {
 ipcMain.handle('file:get-path', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   return getFilePathForWindow(win);
+});
+
+// Context menu (right-click)
+ipcMain.on('editor:context-menu', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+
+  const menu = Menu.buildFromTemplate([
+    { role: 'cut' },
+    { role: 'copy' },
+    { role: 'paste' },
+    { type: 'separator' },
+    { role: 'selectAll' },
+  ]);
+  menu.popup({ window: win });
 });

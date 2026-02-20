@@ -3,7 +3,8 @@ import { EditorView, drawSelection, highlightActiveLine, highlightSpecialChars, 
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
-import { syntaxHighlighting, defaultHighlightStyle, bracketMatching } from '@codemirror/language';
+import { syntaxHighlighting, defaultHighlightStyle, bracketMatching, HighlightStyle } from '@codemirror/language';
+import { tags } from '@lezer/highlight';
 import { search, searchKeymap } from '@codemirror/search';
 import { keymap } from '@codemirror/view';
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
@@ -13,6 +14,15 @@ import { livePreviewExtensions } from './live-preview/decorations';
 import { customKeymap } from './keymaps';
 
 export const modeCompartment = new Compartment();
+
+/**
+ * Override for defaultHighlightStyle's heading rule.
+ * The default applies both bold + underline to tags.heading, which affects
+ * GFM TableHeader cells in edit mode. We keep bold but remove the underline.
+ */
+const headingOverride = HighlightStyle.define([
+  { tag: tags.heading, fontWeight: 'bold', textDecoration: 'none' },
+]);
 
 function baseExtensions(): Extension[] {
   return [
@@ -28,6 +38,7 @@ function baseExtensions(): Extension[] {
     closeBrackets(),
     search(),
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    syntaxHighlighting(headingOverride),
     markdown({
       base: markdownLanguage,
       codeLanguages: languages,

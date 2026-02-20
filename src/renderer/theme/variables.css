@@ -88,5 +88,22 @@
   --color-base-70: #b3b3b3;
   --color-base-100: #dcddde;
 
+  /* Re-declare semantic variables so they pick up the dark base values.
+     CSS custom properties referencing other custom properties resolve at
+     the element where they're defined — not where they're used — so
+     :root definitions still see the light-mode base values. */
+  --background-primary: var(--color-base-00);
+  --background-secondary: var(--color-base-05);
+  --text-normal: var(--color-base-100);
+  --text-muted: var(--color-base-50);
+  --text-faint: var(--color-base-35);
   --code-background: var(--color-base-10);
+  --code-normal: var(--color-base-100);
+  --divider-color: var(--color-base-20);
+  --h1-color: var(--color-base-100);
+  --h2-color: var(--color-base-100);
+  --h3-color: var(--color-base-100);
+  --h4-color: var(--color-base-100);
+  --h5-color: var(--color-base-100);
+  --h6-color: var(--color-base-100);
 }

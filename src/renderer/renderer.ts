@@ -220,6 +220,14 @@ if (window.lume) {
   });
 }
 
+// Right-click context menu
+document.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  if (window.lume) {
+    window.lume.showContextMenu();
+  }
+});
+
 // Keyboard shortcut: Cmd+S / Cmd+Shift+S
 document.addEventListener('keydown', async (e) => {
   if (!window.lume) return;

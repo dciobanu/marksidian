@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('lume', {
     ipcRenderer.send('file:content-changed', { isDirty }),
   openExternal: (url: string) =>
     ipcRenderer.send('shell:open-external', { url }),
+  showContextMenu: () =>
+    ipcRenderer.send('editor:context-menu'),
 
   // Main → Renderer listeners
   onFileOpened: (cb: (data: { path: string; content: string; dir: string }) => void) =>

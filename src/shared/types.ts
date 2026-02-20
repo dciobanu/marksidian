@@ -16,6 +16,7 @@ export interface LumeAPI {
   saveAs: (content: string) => Promise<SaveResult>;
   notifyContentChanged: (isDirty: boolean) => void;
   openExternal: (url: string) => void;
+  showContextMenu: () => void;
   onFileOpened: (cb: (data: FileOpenedPayload) => void) => void;
   onSetMode: (cb: (data: { mode: EditorMode }) => void) => void;
   onSetTheme: (cb: (data: { theme: ThemeMode }) => void) => void;

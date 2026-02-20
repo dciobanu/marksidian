@@ -83,17 +83,42 @@ function parseTableMarkdown(text: string): ParsedTable | null {
   return { headers, alignments, rows, lineCount: lines.length };
 }
 
+// ── Cell position mapping ────────────────────────────────────────
+
+/**
+ * Find the document offset of a cell's content in a raw markdown table line.
+ * Scans for the (col+1)-th pipe character, then skips leading whitespace.
+ */
+function cellOffsetInLine(lineText: string, col: number): number {
+  let pipeCount = 0;
+  for (let i = 0; i < lineText.length; i++) {
+    if (lineText[i] === '|') {
+      if (pipeCount === col) {
+        // Skip past pipe and any leading whitespace
+        let pos = i + 1;
+        while (pos < lineText.length && lineText[pos] === ' ') pos++;
+        return pos;
+      }
+      pipeCount++;
+    }
+  }
+  // Fallback: if line doesn't start with pipe (no leading |), the first
+  // cell starts at position 0; count separators between cells.
+  return 0;
+}
+
 // ── Widget ───────────────────────────────────────────────────────
 
 class TableWidget extends WidgetType {
   constructor(
     readonly data: ParsedTable,
     readonly rawText: string,
+    readonly from: number,
   ) {
     super();
   }
 
-  toDOM(): HTMLElement {
+  toDOM(view: EditorView): HTMLElement {
     const wrapper = document.createElement('div');
     wrapper.className = 'cm-lp-table-widget';
 
@@ -106,6 +131,8 @@ class TableWidget extends WidgetType {
     for (let i = 0; i < this.data.headers.length; i++) {
       const th = document.createElement('th');
       th.textContent = this.data.headers[i];
+      th.dataset.row = '0';
+      th.dataset.col = String(i);
       if (i < this.data.alignments.length) {
         th.style.textAlign = this.data.alignments[i];
       }
@@ -116,11 +143,14 @@ class TableWidget extends WidgetType {
 
     // <tbody>
     const tbody = document.createElement('tbody');
-    for (const row of this.data.rows) {
+    for (let r = 0; r < this.data.rows.length; r++) {
+      const row = this.data.rows[r];
       const tr = document.createElement('tr');
       for (let c = 0; c < this.data.headers.length; c++) {
         const td = document.createElement('td');
         td.textContent = c < row.length ? row[c] : '';
+        td.dataset.row = String(r + 1); // +1 because row 0 is header
+        td.dataset.col = String(c);
         if (c < this.data.alignments.length) {
           td.style.textAlign = this.data.alignments[c];
         }
@@ -130,12 +160,46 @@ class TableWidget extends WidgetType {
     }
     table.appendChild(tbody);
 
+    // Click on a cell to enter edit mode with cursor placed in that cell.
+    // Row/col from data attributes map to raw markdown lines:
+    //   widget row 0 → doc table line 0 (header)
+    //   widget row N (N≥1) → doc table line N+1 (skip delimiter at line 1)
+    wrapper.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+
+      const target = e.target as HTMLElement;
+      const cell = target.closest('th, td') as HTMLElement | null;
+
+      let anchor = this.from; // fallback: start of table
+      if (cell && cell.dataset.row != null && cell.dataset.col != null) {
+        const widgetRow = parseInt(cell.dataset.row, 10);
+        const col = parseInt(cell.dataset.col, 10);
+        // Map widget row → raw markdown line index (0=header, skip 1=delimiter, 2+=data)
+        const rawLineIndex = widgetRow === 0 ? 0 : widgetRow + 1;
+
+        const startLine = view.state.doc.lineAt(this.from);
+        const targetLineNum = startLine.number + rawLineIndex;
+        if (targetLineNum <= view.state.doc.lines) {
+          const targetLine = view.state.doc.line(targetLineNum);
+          const offset = cellOffsetInLine(targetLine.text, col);
+          anchor = targetLine.from + Math.min(offset, targetLine.length);
+        }
+      }
+
+      view.dispatch({ selection: { anchor } });
+      view.focus();
+    });
+
     wrapper.appendChild(table);
     return wrapper;
   }
 
   eq(other: TableWidget): boolean {
     return this.rawText === other.rawText;
+  }
+
+  ignoreEvent(): boolean {
+    return false;
   }
 }
 
@@ -195,7 +259,7 @@ function buildDecorations(view: EditorView): DecorationSet {
               line.from,
               line.to,
               Decoration.replace({
-                widget: new TableWidget(parsed, actualRawText),
+                widget: new TableWidget(parsed, actualRawText, node.from),
               }),
             );
           } else {
