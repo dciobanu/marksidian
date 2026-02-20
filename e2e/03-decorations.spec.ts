@@ -303,26 +303,71 @@ test.describe('Horizontal Rules', () => {
 // ── Tables ──────────────────────────────────────────────────────
 
 test.describe('Tables', () => {
-  test('table lines get styling class', async () => {
+  test('table renders as HTML table widget when cursor is outside', async () => {
     await setDoc(page, '| A | B |\n| -- | -- |\n| 1 | 2 |\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
       (window as any).__lume.getEditorContent().indexOf('Paragraph')
     ));
-    await page.waitForTimeout(200);
-    const lines = await getLineInfo(page);
-    const tableLines = lines.filter(l => l.classes.includes('cm-lp-table-line'));
-    expect(tableLines.length).toBeGreaterThanOrEqual(1);
+    await expect.poll(async () => {
+      return await editorHas(page, '.cm-lp-table-widget');
+    }, { timeout: 3000 }).toBe(true);
   });
 
-  test('table header row gets bold class', async () => {
+  test('table widget has proper thead and tbody', async () => {
     await setDoc(page, '| A | B |\n| -- | -- |\n| 1 | 2 |\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
       (window as any).__lume.getEditorContent().indexOf('Paragraph')
     ));
+    await expect.poll(async () => {
+      return await editorHas(page, '.cm-lp-table-widget');
+    }, { timeout: 3000 }).toBe(true);
+
+    const tableInfo = await page.evaluate(() => {
+      const table = document.querySelector('.cm-lp-table');
+      if (!table) return null;
+      const ths = table.querySelectorAll('th');
+      const tds = table.querySelectorAll('td');
+      return {
+        thCount: ths.length,
+        tdCount: tds.length,
+        headers: Array.from(ths).map(th => th.textContent),
+        cells: Array.from(tds).map(td => td.textContent),
+      };
+    });
+    expect(tableInfo).not.toBeNull();
+    expect(tableInfo!.thCount).toBe(2);
+    expect(tableInfo!.tdCount).toBe(2);
+    expect(tableInfo!.headers).toEqual(['A', 'B']);
+    expect(tableInfo!.cells).toEqual(['1', '2']);
+  });
+
+  test('table shows raw markdown when cursor is inside', async () => {
+    await setDoc(page, '| A | B |\n| -- | -- |\n| 1 | 2 |\n\nParagraph');
+    // Place cursor inside the table
+    await setCursor(page, 3);
     await page.waitForTimeout(200);
+    const hasWidget = await editorHas(page, '.cm-lp-table-widget');
+    expect(hasWidget).toBe(false);
+    // Raw pipe characters should be visible
     const lines = await getLineInfo(page);
-    const headerLines = lines.filter(l => l.classes.includes('cm-lp-table-header'));
-    expect(headerLines.length).toBe(1);
+    const pipeLines = lines.filter(l => l.text.includes('|'));
+    expect(pipeLines.length).toBeGreaterThanOrEqual(2);
+  });
+
+  test('table respects column alignment', async () => {
+    await setDoc(page, '| Left | Center | Right |\n| :--- | :---: | ---: |\n| a | b | c |\n\nParagraph');
+    await setCursor(page, await page.evaluate(() =>
+      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+    ));
+    await expect.poll(async () => {
+      return await editorHas(page, '.cm-lp-table-widget');
+    }, { timeout: 3000 }).toBe(true);
+
+    const alignments = await page.evaluate(() => {
+      const ths = document.querySelectorAll('.cm-lp-table th');
+      return Array.from(ths).map(th => (th as HTMLElement).style.textAlign);
+    });
+    expect(alignments).toEqual(['left', 'center', 'right']);
   });
 
   test('typing after a table works correctly', async () => {
@@ -340,7 +385,6 @@ test.describe('Tables', () => {
     await page.waitForTimeout(200);
     const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
     expect(doc).toContain('After table');
-    // The cursor should be on the last line
     const pos = await getCursorPos(page);
     const lines = doc.split('\n');
     expect(lines[pos.line - 1]).toContain('After table');

@@ -174,14 +174,34 @@
   color: var(--text-normal);
 }
 
-/* Table — per-line styling */
-.cm-lp-table-line {
-  font-family: var(--font-monospace-theme);
-  font-size: 0.9em;
-  background-color: var(--background-secondary);
-  border-bottom: 1px solid var(--divider-color);
+/* Table — Typora-style rendered widget */
+.cm-lp-table-hidden-line {
+  display: none !important;
 }
 
-.cm-lp-table-header {
-  font-weight: 700;
+.cm-lp-table-widget {
+  display: block;
+  margin: 0;
+  overflow-x: auto;
+}
+
+.cm-lp-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: var(--font-text-theme);
+  font-size: var(--font-text-size);
+  line-height: var(--line-height-normal);
+  color: var(--text-normal);
+}
+
+.cm-lp-table th,
+.cm-lp-table td {
+  border: 1px solid var(--divider-color);
+  padding: 6px 13px;
+  text-align: left;
+}
+
+.cm-lp-table th {
+  font-weight: 600;
+  background-color: var(--background-secondary);
 }
