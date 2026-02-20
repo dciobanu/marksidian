@@ -62,7 +62,8 @@ export const taskDecoration = ViewPlugin.fromClass(
       this.decorations = buildDecorations(view);
     }
     update(update: ViewUpdate) {
-      if (update.docChanged || update.selectionSet || update.viewportChanged) {
+      if (update.docChanged || update.selectionSet || update.viewportChanged ||
+          syntaxTree(update.startState) != syntaxTree(update.state)) {
         this.decorations = buildDecorations(update.view);
       }
     }

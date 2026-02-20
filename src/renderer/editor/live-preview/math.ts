@@ -67,14 +67,16 @@ const hiddenLine = Decoration.line({ class: 'cm-lp-math-hidden-line' });
 //
 // Inline math heuristics (matches Obsidian / markdown-it-dollarmath defaults):
 //   - Opening $ must NOT be preceded by another $ or a digit (avoids $$, 100$)
-//   - Opening $ must NOT be followed by a space, digit, or $ (avoids $ text, $39, $$)
+//   - Opening $ must NOT be followed by a space or $ (avoids $ text, $$)
+//   - Opening $ + digit is only allowed when digit is followed by \ (LaTeX cmd)
+//     This allows "$0\le r$" but rejects "$39/month"
 //   - Closing $ must NOT be preceded by a space or $ (avoids text $, $$)
 //   - Closing $ must NOT be followed by a digit or $ (avoids $100, $$)
 //   - Content must stay on one line (.+? doesn't match \n by default)
 //
 // This prevents currency like "$39" or "$19/month" from being treated as math,
-// while still matching legitimate math like "$E=mc^2$" or "$x + 1$".
-const inlineMathRegex = /(?<!\$|[0-9])\$(?!\$| |[0-9])(.+?)(?<! )(?<!\$)\$(?!\$|[0-9])/g;
+// while still matching legitimate math like "$E=mc^2$", "$x + 1$", "$0\le r$".
+const inlineMathRegex = /(?<!\$|[0-9])\$(?!\$| )(?![0-9](?!\\))(.+?)(?<! )(?<!\$)\$(?!\$|[0-9])/g;
 const blockMathRegex = /\$\$([\s\S]+?)\$\$/g;
 
 function buildDecorations(view: EditorView): DecorationSet {

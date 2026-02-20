@@ -6,6 +6,11 @@ import { isCursorInRange } from './utils';
 function buildDecorations(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
 
+  // Collect all decorations first, then sort by position.
+  // Tree iteration is depth-first, so nested emphasis (e.g. *foo **bar***) can
+  // produce out-of-order ranges that RangeSetBuilder would reject.
+  const decos: { from: number; to: number; deco: Decoration }[] = [];
+
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(view.state).iterate({
       from,
@@ -14,28 +19,33 @@ function buildDecorations(view: EditorView): DecorationSet {
         if (node.name === 'StrongEmphasis') {
           if (isCursorInRange(view.state, node.from, node.to)) return;
 
-          // Find EmphasisMark children to determine marker length
           const text = view.state.doc.sliceString(node.from, node.to);
           const markerLen = text.startsWith('__') ? 2 : 2; // ** or __
 
-          builder.add(node.from, node.from + markerLen, Decoration.replace({}));
-          builder.add(node.from + markerLen, node.to - markerLen, Decoration.mark({ class: 'cm-lp-strong' }));
-          builder.add(node.to - markerLen, node.to, Decoration.replace({}));
+          decos.push({ from: node.from, to: node.from + markerLen, deco: Decoration.replace({}) });
+          decos.push({ from: node.from + markerLen, to: node.to - markerLen, deco: Decoration.mark({ class: 'cm-lp-strong' }) });
+          decos.push({ from: node.to - markerLen, to: node.to, deco: Decoration.replace({}) });
         } else if (node.name === 'Emphasis') {
           if (isCursorInRange(view.state, node.from, node.to)) return;
 
-          builder.add(node.from, node.from + 1, Decoration.replace({}));
-          builder.add(node.from + 1, node.to - 1, Decoration.mark({ class: 'cm-lp-em' }));
-          builder.add(node.to - 1, node.to, Decoration.replace({}));
+          decos.push({ from: node.from, to: node.from + 1, deco: Decoration.replace({}) });
+          decos.push({ from: node.from + 1, to: node.to - 1, deco: Decoration.mark({ class: 'cm-lp-em' }) });
+          decos.push({ from: node.to - 1, to: node.to, deco: Decoration.replace({}) });
         } else if (node.name === 'Strikethrough') {
           if (isCursorInRange(view.state, node.from, node.to)) return;
 
-          builder.add(node.from, node.from + 2, Decoration.replace({}));
-          builder.add(node.from + 2, node.to - 2, Decoration.mark({ class: 'cm-lp-strikethrough' }));
-          builder.add(node.to - 2, node.to, Decoration.replace({}));
+          decos.push({ from: node.from, to: node.from + 2, deco: Decoration.replace({}) });
+          decos.push({ from: node.from + 2, to: node.to - 2, deco: Decoration.mark({ class: 'cm-lp-strikethrough' }) });
+          decos.push({ from: node.to - 2, to: node.to, deco: Decoration.replace({}) });
         }
       },
     });
+  }
+
+  // Sort by position (RangeSetBuilder requires non-decreasing order)
+  decos.sort((a, b) => a.from - b.from || a.to - b.to);
+  for (const { from: f, to: t, deco } of decos) {
+    builder.add(f, t, deco);
   }
 
   return builder.finish();
@@ -48,7 +58,8 @@ export const emphasisDecoration = ViewPlugin.fromClass(
       this.decorations = buildDecorations(view);
     }
     update(update: ViewUpdate) {
-      if (update.docChanged || update.selectionSet || update.viewportChanged) {
+      if (update.docChanged || update.selectionSet || update.viewportChanged ||
+          syntaxTree(update.startState) != syntaxTree(update.state)) {
         this.decorations = buildDecorations(update.view);
       }
     }

@@ -120,6 +120,110 @@ test.describe('Emphasis', () => {
     expect(has).toBe(true);
   });
 
+  test('bold and italic render in Algorithms fixture', async () => {
+    // Regression: "**Complexity** for finding *any* path" must render
+    // bold/italic even when the document contains $$ math blocks with * inside
+    await loadFixture(page, 'Algorithms and Data Structures.md');
+
+    // Scroll the target line into the viewport, with cursor placed
+    // a few lines below so it's NOT on the emphasis line
+    await page.evaluate(() => {
+      const view = (window as any).__lume.getEditorView();
+      const doc = view.state.doc.toString();
+      const targetText = '**Complexity** for finding *any*';
+      const idx = doc.indexOf(targetText);
+      // Put cursor on the "Time: O(V+E)" line (2 lines after)
+      const lineAfter = doc.indexOf('O(V+E)', idx);
+      view.dispatch({
+        selection: { anchor: lineAfter >= 0 ? lineAfter : doc.length },
+        scrollIntoView: true,
+      });
+    });
+
+    // "**Complexity** for finding *any* path" should have BOTH bold and italic
+    await expect.poll(async () => {
+      return await page.evaluate(() => {
+        const lines = document.querySelectorAll('.cm-editor .cm-line');
+        for (const l of lines) {
+          const t = l.textContent || '';
+          if (t.includes('Complexity') && t.includes('any') && t.includes('path')) {
+            return {
+              hasStrong: l.querySelector('.cm-lp-strong') !== null,
+              hasEm: l.querySelector('.cm-lp-em') !== null,
+            };
+          }
+        }
+        return { hasStrong: false, hasEm: false };
+      });
+    }, { timeout: 3000 }).toEqual({ hasStrong: true, hasEm: true });
+  });
+
+  test('bold renders after scrolling down and back up', async () => {
+    // Regression: scrolling through a large document must not break emphasis
+    await loadFixture(page, 'Algorithms and Data Structures.md');
+    await setCursor(page, 0);
+    await page.waitForTimeout(300);
+
+    // Verify bold works in initial viewport
+    await expect.poll(async () => {
+      return await page.evaluate(() => {
+        const lines = document.querySelectorAll('.cm-editor .cm-line');
+        for (const l of lines) {
+          if ((l.textContent || '').includes('Implementation')) {
+            return l.querySelector('.cm-lp-strong') !== null;
+          }
+        }
+        return false;
+      });
+    }, { timeout: 3000 }).toBe(true);
+
+    // Scroll to the bottom of the document
+    await page.evaluate(() => {
+      const view = (window as any).__lume.getEditorView();
+      const doc = view.state.doc;
+      view.dispatch({
+        selection: { anchor: doc.length },
+        scrollIntoView: true,
+      });
+    });
+
+    // Bold at the bottom should also render
+    await expect.poll(async () => {
+      return await page.evaluate(() => {
+        const lines = document.querySelectorAll('.cm-editor .cm-line');
+        for (const l of lines) {
+          if ((l.textContent || '').includes('Implementation') ||
+              (l.textContent || '').includes('Complexity')) {
+            if (l.querySelector('.cm-lp-strong')) return true;
+          }
+        }
+        return false;
+      });
+    }, { timeout: 5000 }).toBe(true);
+
+    // Now scroll back to the top
+    await page.evaluate(() => {
+      const view = (window as any).__lume.getEditorView();
+      view.dispatch({
+        selection: { anchor: 0 },
+        scrollIntoView: true,
+      });
+    });
+
+    // Bold at the top should STILL render after scrolling back
+    await expect.poll(async () => {
+      return await page.evaluate(() => {
+        const lines = document.querySelectorAll('.cm-editor .cm-line');
+        for (const l of lines) {
+          if ((l.textContent || '').includes('Implementation')) {
+            return l.querySelector('.cm-lp-strong') !== null;
+          }
+        }
+        return false;
+      });
+    }, { timeout: 5000 }).toBe(true);
+  });
+
   test('strikethrough markers are hidden when cursor is away', async () => {
     await setDoc(page, '~~struck~~ normal\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
@@ -611,6 +715,18 @@ test.describe('Math widgets', () => {
     await page.waitForTimeout(300);
 
     // Math widget should render for legitimate math
+    const hasMathWidget = await editorHas(page, '.cm-lp-math-widget');
+    expect(hasMathWidget).toBe(true);
+  });
+
+  test('digit followed by LaTeX command is valid inline math', async () => {
+    // "$0\le r \le n$" should render as math (digit + backslash = LaTeX)
+    await setDoc(page, 'where $0\\le r \\le n$\n\nParagraph');
+    await setCursor(page, await page.evaluate(() =>
+      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+    ));
+    await page.waitForTimeout(300);
+
     const hasMathWidget = await editorHas(page, '.cm-lp-math-widget');
     expect(hasMathWidget).toBe(true);
   });
