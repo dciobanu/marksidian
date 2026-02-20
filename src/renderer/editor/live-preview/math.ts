@@ -1,76 +1,29 @@
 import { ViewPlugin, ViewUpdate, DecorationSet, Decoration, EditorView, WidgetType } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/state';
 import { isCursorInRange } from './utils';
+import katex from 'katex';
 
-// MathJax lazy loading and caching
-let mathjaxReady = false;
-let mathjaxLoading = false;
-const mathCache = new Map<string, HTMLElement>();
+// Render cache to avoid re-rendering identical expressions
+const mathCache = new Map<string, string>();
 
-async function ensureMathJax(): Promise<void> {
-  if (mathjaxReady) return;
-  if (mathjaxLoading) {
-    // Wait for loading to complete
-    await new Promise<void>((resolve) => {
-      const check = setInterval(() => {
-        if (mathjaxReady) { clearInterval(check); resolve(); }
-      }, 50);
-    });
-    return;
-  }
-  mathjaxLoading = true;
-
-  // MathJax is bundled; configure it
-  if (!(window as any).MathJax) {
-    (window as any).MathJax = {
-      tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
-      svg: { fontCache: 'global' },
-      startup: { typeset: false },
-    };
-  }
-
-  try {
-    // MathJax should be available if bundled
-    const MJ = (window as any).MathJax;
-    if (MJ && MJ.startup && MJ.startup.promise) {
-      await MJ.startup.promise;
-    }
-    mathjaxReady = true;
-  } catch {
-    // MathJax not available — render as text
-    mathjaxReady = false;
-  }
-  mathjaxLoading = false;
-}
-
-function renderMath(latex: string, display: boolean): HTMLElement {
-  const cacheKey = `${display ? 'D' : 'I'}:${latex}`;
+function renderMathHTML(latex: string, displayMode: boolean): string {
+  const cacheKey = `${displayMode ? 'D' : 'I'}:${latex}`;
   const cached = mathCache.get(cacheKey);
-  if (cached) return cached.cloneNode(true) as HTMLElement;
-
-  const MJ = (window as any).MathJax;
-  if (!MJ || !MJ.tex2svg) {
-    const span = document.createElement('span');
-    span.className = 'cm-lp-math-error';
-    span.textContent = latex;
-    return span;
-  }
+  if (cached) return cached;
 
   try {
-    const node = MJ.tex2svg(latex, { display });
-    const svg = node.querySelector('svg');
-    if (svg) {
-      mathCache.set(cacheKey, svg.cloneNode(true) as HTMLElement);
-      return svg;
-    }
-    const span = document.createElement('span');
-    span.textContent = latex;
-    return span;
-  } catch (e: any) {
-    const span = document.createElement('span');
-    span.className = 'cm-lp-math-error';
-    span.textContent = e.message || 'Math error';
-    return span;
+    const html = katex.renderToString(latex, {
+      displayMode,
+      throwOnError: false,   // Render error message instead of throwing
+      errorColor: 'var(--color-red)',
+      trust: false,
+      strict: false,
+    });
+    mathCache.set(cacheKey, html);
+    return html;
+  } catch {
+    // Fallback — should not happen with throwOnError: false
+    return `<span class="cm-lp-math-error">${latex}</span>`;
   }
 }
 
@@ -79,15 +32,7 @@ class InlineMathWidget extends WidgetType {
   toDOM(view: EditorView): HTMLElement {
     const wrapper = document.createElement('span');
     wrapper.className = 'cm-lp-math-widget';
-    if (mathjaxReady) {
-      wrapper.appendChild(renderMath(this.latex, false));
-    } else {
-      wrapper.textContent = this.latex;
-      ensureMathJax().then(() => {
-        wrapper.innerHTML = '';
-        wrapper.appendChild(renderMath(this.latex, false));
-      });
-    }
+    wrapper.innerHTML = renderMathHTML(this.latex, false);
     wrapper.addEventListener('mousedown', (e) => {
       e.preventDefault();
       view.dispatch({ selection: { anchor: this.from } });
@@ -104,15 +49,7 @@ class BlockMathWidget extends WidgetType {
   toDOM(view: EditorView): HTMLElement {
     const wrapper = document.createElement('div');
     wrapper.className = 'cm-lp-math-block-widget';
-    if (mathjaxReady) {
-      wrapper.appendChild(renderMath(this.latex, true));
-    } else {
-      wrapper.textContent = this.latex;
-      ensureMathJax().then(() => {
-        wrapper.innerHTML = '';
-        wrapper.appendChild(renderMath(this.latex, true));
-      });
-    }
+    wrapper.innerHTML = renderMathHTML(this.latex, true);
     wrapper.addEventListener('mousedown', (e) => {
       e.preventDefault();
       view.dispatch({ selection: { anchor: this.from } });
@@ -123,6 +60,8 @@ class BlockMathWidget extends WidgetType {
   eq(other: BlockMathWidget) { return this.latex === other.latex; }
   ignoreEvent() { return false; }
 }
+
+const hiddenLine = Decoration.line({ class: 'cm-lp-math-hidden-line' });
 
 // Regex-based parsing since @lezer/markdown doesn't have math support.
 //
@@ -144,10 +83,14 @@ function buildDecorations(view: EditorView): DecorationSet {
   for (const { from, to } of view.visibleRanges) {
     const text = view.state.doc.sliceString(from, to);
 
-    // Block math first (so inline doesn't match inside blocks)
+    // Block math first — collect ranges (so inline doesn't match inside blocks)
     const blockRanges: [number, number][] = [];
     blockMathRegex.lastIndex = 0;
     let match: RegExpExecArray | null;
+
+    // Collect all decorations so we can sort them by position
+    // (block math produces per-line decos that must interleave properly with inline)
+    const decos: { from: number; to: number; deco: Decoration }[] = [];
 
     while ((match = blockMathRegex.exec(text)) !== null) {
       const start = from + match.index;
@@ -157,9 +100,36 @@ function buildDecorations(view: EditorView): DecorationSet {
       if (isCursorInRange(view.state, start, end)) continue;
 
       const latex = match[1].trim();
-      builder.add(start, end, Decoration.replace({
-        widget: new BlockMathWidget(latex, start),
-      }));
+      const startLine = view.state.doc.lineAt(start);
+      const endLine = view.state.doc.lineAt(end);
+
+      // Per-line decorations (CM6 plugins can't replace across line breaks)
+      for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
+        const line = view.state.doc.line(lineNum);
+
+        if (lineNum === startLine.number) {
+          // First line: replace content with widget
+          decos.push({
+            from: line.from,
+            to: line.to,
+            deco: Decoration.replace({ widget: new BlockMathWidget(latex, start) }),
+          });
+        } else {
+          // Subsequent lines: hide with line class + replace content
+          decos.push({
+            from: line.from,
+            to: line.from,
+            deco: hiddenLine,
+          });
+          if (line.length > 0) {
+            decos.push({
+              from: line.from,
+              to: line.to,
+              deco: Decoration.replace({}),
+            });
+          }
+        }
+      }
     }
 
     // Inline math
@@ -174,9 +144,17 @@ function buildDecorations(view: EditorView): DecorationSet {
       if (isCursorInRange(view.state, start, end)) continue;
 
       const latex = match[1];
-      builder.add(start, end, Decoration.replace({
-        widget: new InlineMathWidget(latex, start),
-      }));
+      decos.push({
+        from: start,
+        to: end,
+        deco: Decoration.replace({ widget: new InlineMathWidget(latex, start) }),
+      });
+    }
+
+    // Sort by position and add to builder (RangeSetBuilder requires non-decreasing order)
+    decos.sort((a, b) => a.from - b.from || a.to - b.to);
+    for (const { from: f, to: t, deco } of decos) {
+      builder.add(f, t, deco);
     }
   }
 
@@ -188,10 +166,6 @@ export const mathDecoration = ViewPlugin.fromClass(
     decorations: DecorationSet;
     constructor(view: EditorView) {
       this.decorations = buildDecorations(view);
-      ensureMathJax().then(() => {
-        this.decorations = buildDecorations(view);
-        view.requestMeasure();
-      });
     }
     update(update: ViewUpdate) {
       if (update.docChanged || update.selectionSet || update.viewportChanged) {

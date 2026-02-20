@@ -128,12 +128,12 @@
 }
 
 /* Math */
-.cm-lp-math-widget {
-  display: inline-block;
-  vertical-align: middle;
+.cm-lp-math-hidden-line {
+  display: none !important;
 }
 
-.cm-lp-math-widget svg {
+.cm-lp-math-widget {
+  display: inline-block;
   vertical-align: middle;
 }
 

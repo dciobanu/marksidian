@@ -544,28 +544,49 @@ test.describe('Stress test fixture', () => {
 // ── Math widget click-to-edit ────────────────────────────────────
 
 test.describe('Math widgets', () => {
-  test('clicking inline math widget enters edit mode', async () => {
-    // Use dollar-delimited inline math: $E=mc^2$
+  test('inline math renders with KaTeX', async () => {
     await setDoc(page, 'Before $E=mc^2$ after');
-    // Move cursor away from the math range
     await setCursor(page, 0);
     await page.waitForTimeout(300);
 
-    // Check if math widget is rendered (may or may not be depending on MathJax)
+    // KaTeX renders synchronously — widget should be present
     const hasMathWidget = await editorHas(page, '.cm-lp-math-widget');
-    if (hasMathWidget) {
-      // Click on the math widget
-      const widget = page.locator('.cm-lp-math-widget').first();
-      await widget.click();
-      await page.waitForTimeout(200);
+    expect(hasMathWidget).toBe(true);
 
-      // Widget should disappear, raw $E=mc^2$ visible
-      const stillHasWidget = await editorHas(page, '.cm-lp-math-widget');
-      expect(stillHasWidget).toBe(false);
-      const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
-      expect(doc).toContain('$E=mc^2$');
-    }
-    // If no math widget rendered (MathJax not loaded), test passes vacuously
+    // KaTeX should have rendered actual math (not raw text)
+    const hasKatex = await editorHas(page, '.cm-lp-math-widget .katex');
+    expect(hasKatex).toBe(true);
+  });
+
+  test('block math renders with KaTeX', async () => {
+    await setDoc(page, 'Before\n\n$$\n\\frac{N!}{n_1! \\cdot n_2!}\n$$\n\nAfter');
+    await setCursor(page, 0);
+    await page.waitForTimeout(300);
+
+    // Block math widget should render
+    const hasBlockWidget = await editorHas(page, '.cm-lp-math-block-widget');
+    expect(hasBlockWidget).toBe(true);
+
+    // KaTeX should have rendered actual math
+    const hasKatex = await editorHas(page, '.cm-lp-math-block-widget .katex');
+    expect(hasKatex).toBe(true);
+  });
+
+  test('clicking inline math widget enters edit mode', async () => {
+    await setDoc(page, 'Before $E=mc^2$ after');
+    await setCursor(page, 0);
+    await page.waitForTimeout(300);
+
+    // Click on the math widget
+    const widget = page.locator('.cm-lp-math-widget').first();
+    await widget.click();
+    await page.waitForTimeout(200);
+
+    // Widget should disappear, raw $E=mc^2$ visible
+    const stillHasWidget = await editorHas(page, '.cm-lp-math-widget');
+    expect(stillHasWidget).toBe(false);
+    const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
+    expect(doc).toContain('$E=mc^2$');
   });
 
   test('dollar amounts are NOT treated as inline math', async () => {
@@ -587,11 +608,11 @@ test.describe('Math widgets', () => {
   test('legitimate math with variables still works as inline math', async () => {
     await setDoc(page, 'The formula $x + y = z$ is simple');
     await setCursor(page, 0);
+    await page.waitForTimeout(300);
 
-    // Math widget should render for legitimate math (may need time for MathJax)
-    await expect.poll(async () => {
-      return await editorHas(page, '.cm-lp-math-widget');
-    }, { timeout: 3000 }).toBe(true);
+    // Math widget should render for legitimate math
+    const hasMathWidget = await editorHas(page, '.cm-lp-math-widget');
+    expect(hasMathWidget).toBe(true);
   });
 
   test('dollar with trailing space is NOT math', async () => {
