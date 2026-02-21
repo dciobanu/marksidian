@@ -7,14 +7,15 @@
   font-family: var(--font-text-theme);
   font-size: var(--font-text-size);
   line-height: var(--line-height-normal);
+  padding: 0 2em;
 }
 
 .readable-line-width .markdown-preview-view {
   max-width: var(--file-line-width);
   margin: 0 auto;
-  padding: 0 2em;
 }
 
+/* ---- Headings ---- */
 .markdown-preview-view h1 { font-size: var(--h1-size); font-weight: var(--h1-weight); color: var(--h1-color); margin: 1em 0 0.5em; }
 .markdown-preview-view h2 { font-size: var(--h2-size); font-weight: var(--h2-weight); color: var(--h2-color); margin: 0.8em 0 0.4em; }
 .markdown-preview-view h3 { font-size: var(--h3-size); font-weight: var(--h3-weight); color: var(--h3-color); margin: 0.6em 0 0.3em; }
@@ -22,24 +23,29 @@
 .markdown-preview-view h5 { font-size: var(--h5-size); font-weight: var(--h5-weight); color: var(--h5-color); margin: 0.4em 0 0.2em; }
 .markdown-preview-view h6 { font-size: var(--h6-size); font-weight: var(--h6-weight); color: var(--h6-color); margin: 0.4em 0 0.2em; }
 
+/* ---- Paragraphs ---- */
 .markdown-preview-view p { margin: 0.5em 0; }
 
+/* ---- Links ---- */
 .markdown-preview-view a {
   color: var(--text-accent);
   text-decoration: none;
 }
 .markdown-preview-view a:hover { text-decoration: underline; }
 
+/* ---- Inline formatting ---- */
 .markdown-preview-view strong { font-weight: 700; }
 .markdown-preview-view em { font-style: italic; }
 .markdown-preview-view del { text-decoration: line-through; }
 
+/* ---- Highlight (==text==) ---- */
 .markdown-preview-view mark {
   background-color: hsla(60, 100%, 50%, 0.4);
   padding: 1px 2px;
   border-radius: 2px;
 }
 
+/* ---- Inline code ---- */
 .markdown-preview-view code {
   font-family: var(--font-monospace-theme);
   font-size: 0.9em;
@@ -49,6 +55,7 @@
   border-radius: 3px;
 }
 
+/* ---- Code blocks ---- */
 .markdown-preview-view pre {
   background-color: var(--code-background);
   border-radius: 4px;
@@ -63,6 +70,7 @@
   font-size: 0.9em;
 }
 
+/* ---- Blockquotes ---- */
 .markdown-preview-view blockquote {
   border-left: 3px solid var(--interactive-accent);
   padding-left: 1em;
@@ -70,6 +78,7 @@
   color: var(--text-normal);
 }
 
+/* ---- Lists ---- */
 .markdown-preview-view ul, .markdown-preview-view ol {
   padding-left: 2em;
   margin: 0.5em 0;
@@ -77,17 +86,20 @@
 
 .markdown-preview-view li { margin: 0.2em 0; }
 
+/* ---- Task checkboxes ---- */
 .markdown-preview-view input[type="checkbox"] {
   accent-color: var(--interactive-accent);
   margin-right: 4px;
 }
 
+/* ---- Horizontal rules ---- */
 .markdown-preview-view hr {
   border: none;
   border-top: 1px solid var(--divider-color);
   margin: 1.5em 0;
 }
 
+/* ---- Tables ---- */
 .markdown-preview-view table {
   border-collapse: collapse;
   width: auto;
@@ -105,11 +117,65 @@
   background-color: var(--background-secondary);
 }
 
+/* ---- Images ---- */
 .markdown-preview-view img {
   max-width: 100%;
   border-radius: 4px;
 }
 
+/* ---- Math (KaTeX) ---- */
+.markdown-preview-view .katex-block {
+  text-align: center;
+  margin: 0.5em 0;
+}
+
+.markdown-preview-view .katex-error {
+  color: var(--color-red);
+  font-family: var(--font-monospace-theme);
+  font-size: 0.85em;
+}
+
+/* ---- Footnotes ---- */
+.markdown-preview-view .footnote-ref a {
+  color: var(--text-accent);
+  text-decoration: none;
+  font-size: 0.8em;
+}
+
+.markdown-preview-view .footnote-ref a:hover {
+  text-decoration: underline;
+}
+
+.markdown-preview-view .footnotes-sep {
+  border: none;
+  border-top: 1px solid var(--divider-color);
+  margin: 2em 0 1em;
+}
+
+.markdown-preview-view .footnotes {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+.markdown-preview-view .footnotes-list {
+  padding-left: 2em;
+}
+
+.markdown-preview-view .footnote-item p {
+  margin: 0.2em 0;
+}
+
+.markdown-preview-view .footnote-backref {
+  color: var(--text-accent);
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.markdown-preview-view .footnote-backref:hover {
+  text-decoration: underline;
+}
+
+/* ---- Superscript / subscript ---- */
 .markdown-preview-view sup {
   font-size: 0.8em;
 }

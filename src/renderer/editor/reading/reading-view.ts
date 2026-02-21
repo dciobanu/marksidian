@@ -1,9 +1,29 @@
 import MarkdownIt from 'markdown-it';
+import markdownItMark from 'markdown-it-mark';
+import markdownItFootnote from 'markdown-it-footnote';
+import markdownItFrontMatter from 'markdown-it-front-matter';
+import markdownItKatex from '@vscode/markdown-it-katex';
 
 const md = new MarkdownIt({
   html: true,
   linkify: true,
   typographer: true,
+});
+
+// ==highlight== support (renders as <mark>)
+md.use(markdownItMark);
+
+// Footnote support [^1] and [^1]: definition
+md.use(markdownItFootnote);
+
+// Frontmatter — strip YAML front matter so it doesn't appear in reading view
+md.use(markdownItFrontMatter, () => {
+  // Callback receives the frontmatter string; we ignore it (just strip it)
+});
+
+// Math support — $inline$ and $$block$$ via KaTeX
+md.use(markdownItKatex, {
+  throwOnError: false,
 });
 
 // Enable task lists
@@ -23,10 +43,6 @@ md.use((md) => {
       }
     }
     return defaultRender(tokens, idx, options, env, self);
-  };
-
-  const defaultInlineRender = md.renderer.rules.text || function (tokens, idx) {
-    return tokens[idx].content;
   };
 
   // We replace checkbox patterns inline with actual checkboxes

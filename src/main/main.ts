@@ -13,6 +13,9 @@ import { buildMenu } from './menu';
 import { IPC_INVOKE, IPC_SEND, IPC_PUSH } from '../shared/ipc-channels';
 import { loadSession, saveSession, collectSessionState } from './session-manager';
 
+// Disable Chromium background networking (telemetry, component updater, safe browsing)
+app.commandLine.appendSwitch('disable-background-networking');
+
 // Register custom protocol for loading local assets (images)
 protocol.registerSchemesAsPrivileged([
   {

@@ -4,3 +4,4 @@ release/
 *.dmg
 *.zip
 .DS_Store
+test-results/.last-run.json

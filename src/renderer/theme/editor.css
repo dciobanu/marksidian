@@ -19,6 +19,9 @@
 .cm-content {
   padding: 0 2em;
   caret-color: var(--text-normal);
+  /* Override CodeMirror base theme which sets monospace on .cm-content */
+  font-family: var(--font-text-theme);
+  line-height: var(--editor-line-height);
 }
 
 /* Readable line width */
