@@ -1,12 +1,16 @@
 import { _electron as electron, ElectronApplication, Page } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 
 const ROOT = path.resolve(__dirname, '..');
 
 export async function launchApp(): Promise<{ app: ElectronApplication; page: Page }> {
+  // Use an isolated temp userData dir so session.json from manual testing
+  // doesn't interfere with E2E tests.
+  const tmpUserData = fs.mkdtempSync(path.join(os.tmpdir(), 'lume-e2e-'));
   const app = await electron.launch({
-    args: [path.join(ROOT, 'dist', 'main', 'main.js')],
+    args: [path.join(ROOT, 'dist', 'main', 'main.js'), '--user-data-dir=' + tmpUserData],
     env: { ...process.env, NODE_ENV: 'test' },
   });
   const page = await app.firstWindow();
