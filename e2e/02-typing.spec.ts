@@ -54,9 +54,9 @@ test('typing bold text', async () => {
 });
 
 test('typing a link', async () => {
-  await typeText(page, '[click here](https://example.com)');
+  await typeText(page, '[click here](https://www.ciobanu.org/)');
   const doc = await getDoc(page);
-  expect(doc).toBe('[click here](https://example.com)');
+  expect(doc).toBe('[click here](https://www.ciobanu.org/)');
 });
 
 test('typing a fenced code block', async () => {

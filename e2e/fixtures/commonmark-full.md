@@ -49,15 +49,15 @@ This is a sentence with `multiple` inline `code` spans.
 
 ## Links
 
-This is an [inline link](https://example.com).
+This is an [inline link](https://www.ciobanu.org/).
 
-This is an [inline link with title](https://example.com "Example Title").
+This is an [inline link with title](https://www.ciobanu.org/ "Ciobanu Title").
 
 This is an [empty link]().
 
-An autolink: <https://www.example.com>
+An autolink: <https://www.ciobanu.org/>
 
-An email autolink: <user@example.com>
+An email autolink: <dorin@ciobanu.org>
 
 ## Images
 

@@ -71,7 +71,7 @@ The frontmatter is at the top of the file. This section just verifies frontmatte
   ```
 
 1. Ordered list with **bold**, *italic*, and `code`.
-2. Second item with a [link](https://example.com).
+2. Second item with a [link](https://www.ciobanu.org/).
 3. Third item with ~~strikethrough~~ and ==highlight==.
 
 ## Complex Table
@@ -138,7 +138,7 @@ code
 
 ## Paragraphs with Inline Diversity
 
-A paragraph with **bold**, *italic*, `code`, ~~strikethrough~~, ==highlight==, [a link](https://example.com), and math $x^2$ all on one line.
+A paragraph with **bold**, *italic*, `code`, ~~strikethrough~~, ==highlight==, [a link](https://www.ciobanu.org/), and math $x^2$ all on one line.
 
 ## Empty and Minimal Elements
 

@@ -294,7 +294,7 @@ test.describe('Code Blocks', () => {
 
 test.describe('Links', () => {
   test('link renders with decoration class', async () => {
-    await setDoc(page, '[Click me](https://example.com)\n\nParagraph');
+    await setDoc(page, '[Click me](https://www.ciobanu.org/)\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
       (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
@@ -304,7 +304,7 @@ test.describe('Links', () => {
   });
 
   test('link URL is stored in data attribute', async () => {
-    await setDoc(page, '[Click me](https://example.com)\n\nParagraph');
+    await setDoc(page, '[Click me](https://www.ciobanu.org/)\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
       (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
@@ -313,7 +313,7 @@ test.describe('Links', () => {
       const link = document.querySelector('.cm-lp-link');
       return link?.getAttribute('data-url') || '';
     });
-    expect(url).toBe('https://example.com');
+    expect(url).toBe('https://www.ciobanu.org/');
   });
 });
 

@@ -457,11 +457,11 @@ test.describe('Reading view special features', () => {
   });
 
   test('images render in reading view', async () => {
-    await showReading(page, '![Alt text](https://example.com/img.png)');
+    await showReading(page, '![Alt text](https://www.ciobanu.org/img.png)');
 
     const img = rv(page, 'img');
     await expect(img).toHaveAttribute('alt', 'Alt text');
-    await expect(img).toHaveAttribute('src', 'https://example.com/img.png');
+    await expect(img).toHaveAttribute('src', 'https://www.ciobanu.org/img.png');
     await showLive(page);
   });
 
@@ -620,13 +620,13 @@ test.describe('Reading view rendering (CommonMark full)', () => {
   });
 
   test('links render as <a> elements with href', async () => {
-    const links = rv(page, 'a[href="https://example.com"]');
+    const links = rv(page, 'a[href="https://www.ciobanu.org/"]');
     expect(await links.count()).toBeGreaterThanOrEqual(1);
     await expect(links.first()).toBeVisible();
   });
 
   test('autolinks render', async () => {
-    const autolink = rv(page, 'a[href="https://www.example.com"]');
+    const autolink = rv(page, 'a[href="https://www.ciobanu.org/"]');
     expect(await autolink.count()).toBeGreaterThanOrEqual(1);
   });
 

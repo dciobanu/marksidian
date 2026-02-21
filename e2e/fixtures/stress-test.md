@@ -92,11 +92,11 @@ This is ==unclosed highlight
 
 ## Links with Special Characters
 
-[Link with (parens)](https://example.com/path_(test))
+[Link with (parens)](https://www.ciobanu.org/path_(test))
 
-[Link](https://example.com/search?q=hello&lang=en)
+[Link](https://www.ciobanu.org/search?q=hello&lang=en)
 
-[Link with "quotes"](https://example.com "Title with \"escapes\"")
+[Link with "quotes"](https://www.ciobanu.org/ "Title with \"escapes\"")
 
 ## Images Inline with Text
 
@@ -107,7 +107,7 @@ Before ![tiny](https://placehold.co/20) after image in paragraph.
 ## Lists with Complex Content
 
 - Item with **bold**, *italic*, and `code`
-- Item with a [link](https://example.com)
+- Item with a [link](https://www.ciobanu.org/)
 - Item with math: $x^2 + y^2 = z^2$
 - Item with ~~strike~~ and ==highlight==
 
