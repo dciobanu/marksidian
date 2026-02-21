@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { IPC_SEND, IPC_PUSH } from '../shared/ipc-channels';
 
-contextBridge.exposeInMainWorld('lume', {
+contextBridge.exposeInMainWorld('marksidian', {
   // Request-response (invoke → Promise)
   save: (content: string) =>
     ipcRenderer.invoke('file:save', { content }),

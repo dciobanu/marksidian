@@ -16,7 +16,7 @@ import { loadSession, saveSession, collectSessionState } from './session-manager
 // Register custom protocol for loading local assets (images)
 protocol.registerSchemesAsPrivileged([
   {
-    scheme: 'lume-asset',
+    scheme: 'marksidian-asset',
     privileges: {
       standard: true,
       secure: true,
@@ -52,8 +52,8 @@ app.on('before-quit', async (event) => {
 });
 
 app.whenReady().then(async () => {
-  // Handle lume-asset:// protocol for local image loading
-  protocol.handle('lume-asset', (request) => {
+  // Handle marksidian-asset:// protocol for local image loading
+  protocol.handle('marksidian-asset', (request) => {
     const filePath = decodeURIComponent(new URL(request.url).pathname);
     return net.fetch(`file://${filePath}`);
   });

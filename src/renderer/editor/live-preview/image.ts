@@ -31,7 +31,7 @@ class ImageWidget extends WidgetType {
       if (currentFileDir && !resolvedSrc.startsWith('/')) {
         resolvedSrc = currentFileDir + '/' + resolvedSrc;
       }
-      resolvedSrc = 'lume-asset://' + resolvedSrc;
+      resolvedSrc = 'marksidian-asset://' + resolvedSrc;
     }
 
     img.src = resolvedSrc;

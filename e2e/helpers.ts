@@ -8,7 +8,7 @@ const ROOT = path.resolve(__dirname, '..');
 export async function launchApp(): Promise<{ app: ElectronApplication; page: Page }> {
   // Use an isolated temp userData dir so session.json from manual testing
   // doesn't interfere with E2E tests.
-  const tmpUserData = fs.mkdtempSync(path.join(os.tmpdir(), 'lume-e2e-'));
+  const tmpUserData = fs.mkdtempSync(path.join(os.tmpdir(), 'marksidian-e2e-'));
   const app = await electron.launch({
     args: [path.join(ROOT, 'dist', 'main', 'main.js'), '--user-data-dir=' + tmpUserData],
     env: { ...process.env, NODE_ENV: 'test' },
@@ -21,12 +21,12 @@ export async function launchApp(): Promise<{ app: ElectronApplication; page: Pag
 
 /** Get the raw document string from the editor via CM6 API. */
 export async function getDoc(page: Page): Promise<string> {
-  return page.evaluate(() => (window as any).__lume.getEditorContent());
+  return page.evaluate(() => (window as any).__marksidian.getEditorContent());
 }
 
 /** Replace the entire document with `text` via CM6 dispatch. */
 export async function setDoc(page: Page, text: string): Promise<void> {
-  await page.evaluate((t) => (window as any).__lume.setEditorContent(t), text);
+  await page.evaluate((t) => (window as any).__marksidian.setEditorContent(t), text);
   // Give CM6 + decorations a tick to settle
   await page.waitForTimeout(100);
 }
@@ -42,7 +42,7 @@ export async function loadFixture(page: Page, name: string): Promise<string> {
 /** Move the cursor to a specific character offset. */
 export async function setCursor(page: Page, pos: number): Promise<void> {
   await page.evaluate((p) => {
-    const view = (window as any).__lume.getEditorView();
+    const view = (window as any).__marksidian.getEditorView();
     view.dispatch({ selection: { anchor: p } });
     view.focus();
   }, pos);
@@ -52,7 +52,7 @@ export async function setCursor(page: Page, pos: number): Promise<void> {
 /** Move the cursor to a line and column (both 1-based). */
 export async function setCursorLineCol(page: Page, line: number, col: number): Promise<void> {
   await page.evaluate(({ line, col }) => {
-    const view = (window as any).__lume.getEditorView();
+    const view = (window as any).__marksidian.getEditorView();
     const lineObj = view.state.doc.line(line);
     const pos = lineObj.from + col - 1;
     view.dispatch({ selection: { anchor: pos } });
@@ -63,12 +63,12 @@ export async function setCursorLineCol(page: Page, line: number, col: number): P
 
 /** Get the current cursor position as {line, col}. */
 export async function getCursorPos(page: Page): Promise<{ line: number; col: number }> {
-  return page.evaluate(() => (window as any).__lume.getCursorPosition());
+  return page.evaluate(() => (window as any).__marksidian.getCursorPosition());
 }
 
 /** Get the current editor mode. */
 export async function getMode(page: Page): Promise<string> {
-  return page.evaluate(() => (window as any).__lume.getMode());
+  return page.evaluate(() => (window as any).__marksidian.getMode());
 }
 
 /** Click inside the CM6 content area to focus the editor. */

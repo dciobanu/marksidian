@@ -16,7 +16,7 @@ const ROOT = path.resolve(__dirname, '..');
 let userDataDir: string;
 
 test.beforeAll(() => {
-  userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lume-session-test-'));
+  userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'marksidian-session-test-'));
 });
 
 test.afterAll(() => {
@@ -39,8 +39,8 @@ async function launchWithUserData(): Promise<{ app: ElectronApplication; page: P
 
 async function cleanClose(app: ElectronApplication, page: Page): Promise<void> {
   await page.evaluate(() => {
-    (window as any).__lume.markSaved();
-    window.lume.notifyContentChanged(false);
+    (window as any).__marksidian.markSaved();
+    window.marksidian.notifyContentChanged(false);
   }).catch(() => {});
   await app.close();
 }
@@ -53,22 +53,22 @@ test.describe('Session persistence', () => {
     const { app, page } = await launchWithUserData();
 
     // Set content and move cursor
-    await page.evaluate((t) => (window as any).__lume.setEditorContent(t), '# Title\n\nLine three here');
+    await page.evaluate((t) => (window as any).__marksidian.setEditorContent(t), '# Title\n\nLine three here');
     await page.waitForTimeout(100);
 
     // Move cursor to offset 20
-    await page.evaluate(() => (window as any).__lume.setCursorOffset(20));
+    await page.evaluate(() => (window as any).__marksidian.setCursorOffset(20));
     await page.waitForTimeout(50);
 
     // Switch to source mode
-    await page.evaluate(() => (window as any).__lume.switchToMode('source'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('source'));
     await page.waitForTimeout(50);
 
     // Read state from renderer
     const state = await page.evaluate(() => ({
-      cursorOffset: (window as any).__lume.getCursorOffset(),
-      scrollTop: (window as any).__lume.getScrollTop(),
-      editorMode: (window as any).__lume.getMode(),
+      cursorOffset: (window as any).__marksidian.getCursorOffset(),
+      scrollTop: (window as any).__marksidian.getScrollTop(),
+      editorMode: (window as any).__marksidian.getMode(),
     }));
 
     expect(state.cursorOffset).toBe(20);
@@ -102,17 +102,17 @@ test.describe('Session persistence', () => {
     await page.waitForTimeout(500);
 
     // Verify file content
-    const content = await page.evaluate(() => (window as any).__lume.getEditorContent());
+    const content = await page.evaluate(() => (window as any).__marksidian.getEditorContent());
     expect(content).toBe('# Restore Test\n\nLine 3 text.\nLine 4 text.');
 
     // Verify cursor offset was restored
     const cursorOffset = await page.evaluate(() =>
-      (window as any).__lume.getCursorOffset()
+      (window as any).__marksidian.getCursorOffset()
     );
     expect(cursorOffset).toBe(20);
 
     // Verify mode was restored to source
-    const mode = await page.evaluate(() => (window as any).__lume.getMode());
+    const mode = await page.evaluate(() => (window as any).__marksidian.getMode());
     expect(mode).toBe('source');
 
     // Verify zoom was restored (zoomLevel 2 → font-size 20px)
@@ -151,7 +151,7 @@ test.describe('Session persistence', () => {
     expect(windowCount).toBe(1);
 
     // Should be empty editor
-    const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
+    const doc = await page.evaluate(() => (window as any).__marksidian.getEditorContent());
     expect(doc.trim()).toBe('');
 
     await cleanClose(app, page);
@@ -182,7 +182,7 @@ test.describe('Session persistence', () => {
     expect(fontSize).toBe('18px');
 
     // Verify mode is live
-    const mode = await page.evaluate(() => (window as any).__lume.getMode());
+    const mode = await page.evaluate(() => (window as any).__marksidian.getMode());
     expect(mode).toBe('live');
 
     await cleanClose(app, page);
@@ -196,7 +196,7 @@ test.describe('Session persistence', () => {
     await page.waitForTimeout(200);
 
     // Should have a blank window
-    const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
+    const doc = await page.evaluate(() => (window as any).__marksidian.getEditorContent());
     expect(doc.trim()).toBe('');
 
     await cleanClose(app, page);
@@ -209,15 +209,15 @@ test.describe('Session persistence', () => {
     const { app, page } = await launchWithUserData();
 
     // Set some content and move cursor
-    await page.evaluate((t) => (window as any).__lume.setEditorContent(t), '# Quit Test\n\nSome content');
+    await page.evaluate((t) => (window as any).__marksidian.setEditorContent(t), '# Quit Test\n\nSome content');
     await page.waitForTimeout(100);
-    await page.evaluate(() => (window as any).__lume.setCursorOffset(10));
+    await page.evaluate(() => (window as any).__marksidian.setCursorOffset(10));
     await page.waitForTimeout(50);
 
     // Mark as saved so close dialog doesn't appear
     await page.evaluate(() => {
-      (window as any).__lume.markSaved();
-      window.lume.notifyContentChanged(false);
+      (window as any).__marksidian.markSaved();
+      window.marksidian.notifyContentChanged(false);
     });
 
     // Close the app — this triggers before-quit → collect → save

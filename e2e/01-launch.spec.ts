@@ -10,8 +10,8 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   await page.evaluate(() => {
-    (window as any).__lume.markSaved();
-    window.lume.notifyContentChanged(false);
+    (window as any).__marksidian.markSaved();
+    window.marksidian.notifyContentChanged(false);
   }).catch(() => {});
   await app.close();
 });

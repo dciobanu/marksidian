@@ -43,7 +43,7 @@ prefersDark.addEventListener('change', (e) => {
 createEditor(editorContainer);
 
 // Expose editor API for E2E testing (switchToMode added below after definition)
-(window as any).__lume = {
+(window as any).__marksidian = {
   getEditorView,
   setEditorContent,
   getEditorContent,
@@ -79,8 +79,8 @@ setUpdateListener(() => {
   });
 
   // Notify main process of dirty state
-  if (window.lume) {
-    window.lume.notifyContentChanged(isDirty());
+  if (window.marksidian) {
+    window.marksidian.notifyContentChanged(isDirty());
   }
 });
 
@@ -123,27 +123,27 @@ function switchToMode(mode: EditorMode): void {
 }
 
 // Add switchToMode to test API
-(window as any).__lume.switchToMode = switchToMode;
+(window as any).__marksidian.switchToMode = switchToMode;
 
 // Save helper
 async function doSave(): Promise<void> {
   const content = getEditorContent();
-  await window.lume.save(content);
+  await window.marksidian.save(content);
   markSaved();
-  window.lume.notifyContentChanged(false);
+  window.marksidian.notifyContentChanged(false);
 }
 
 async function doSaveAs(): Promise<void> {
   const content = getEditorContent();
-  await window.lume.saveAs(content);
+  await window.marksidian.saveAs(content);
   markSaved();
-  window.lume.notifyContentChanged(false);
+  window.marksidian.notifyContentChanged(false);
 }
 
 // IPC listeners
-if (window.lume) {
+if (window.marksidian) {
   // File opened from main process
-  window.lume.onFileOpened((data) => {
+  window.marksidian.onFileOpened((data) => {
     setEditorContent(data.content);
     setFileDir(data.dir);
     markSaved();
@@ -157,7 +157,7 @@ if (window.lume) {
   });
 
   // Menu: Save
-  window.lume.onMenuSave(async () => {
+  window.marksidian.onMenuSave(async () => {
     try {
       await doSave();
     } catch (e: any) {
@@ -168,7 +168,7 @@ if (window.lume) {
   });
 
   // Menu: Save As
-  window.lume.onMenuSaveAs(async () => {
+  window.marksidian.onMenuSaveAs(async () => {
     try {
       await doSaveAs();
     } catch (e: any) {
@@ -179,7 +179,7 @@ if (window.lume) {
   });
 
   // Menu: Toggle mode (Live Preview <-> Source)
-  window.lume.onMenuToggleMode(() => {
+  window.marksidian.onMenuToggleMode(() => {
     const current = getMode();
     if (current === 'reading') {
       switchToMode('live');
@@ -189,18 +189,18 @@ if (window.lume) {
   });
 
   // Menu: Toggle reading mode
-  window.lume.onMenuToggleReading(() => {
+  window.marksidian.onMenuToggleReading(() => {
     const current = getMode();
     switchToMode(current === 'reading' ? 'live' : 'reading');
   });
 
   // Menu: Toggle readable line width
-  window.lume.onMenuToggleLineWidth((data) => {
+  window.marksidian.onMenuToggleLineWidth((data) => {
     toggleReadableLineWidth(data.enabled);
   });
 
   // Menu: Zoom
-  window.lume.onMenuZoom((data) => {
+  window.marksidian.onMenuZoom((data) => {
     if (data.direction === 'in') {
       zoomLevel = Math.min(zoomLevel + 1, 10);
     } else if (data.direction === 'out') {
@@ -212,12 +212,12 @@ if (window.lume) {
   });
 
   // Set mode from main process
-  window.lume.onSetMode((data) => {
+  window.marksidian.onSetMode((data) => {
     switchToMode(data.mode);
   });
 
   // Set theme from main process
-  window.lume.onSetTheme((data) => {
+  window.marksidian.onSetTheme((data) => {
     if (data.theme === 'dark') {
       document.body.classList.add('theme-dark');
       document.body.classList.remove('theme-light');
@@ -228,8 +228,8 @@ if (window.lume) {
   });
 
   // Session: collect state on quit
-  window.lume.onCollectSessionState(() => {
-    window.lume.sendSessionState({
+  window.marksidian.onCollectSessionState(() => {
+    window.marksidian.sendSessionState({
       cursorOffset: getCursorOffset(),
       scrollTop: getScrollTop(),
       editorMode: getMode(),
@@ -238,7 +238,7 @@ if (window.lume) {
   });
 
   // Session: restore state on launch
-  window.lume.onRestoreState((data) => {
+  window.marksidian.onRestoreState((data) => {
     switchToMode(data.editorMode);
     zoomLevel = data.zoomLevel;
     applyZoom();
@@ -250,14 +250,14 @@ if (window.lume) {
 // Right-click context menu
 document.addEventListener('contextmenu', (e) => {
   e.preventDefault();
-  if (window.lume) {
-    window.lume.showContextMenu();
+  if (window.marksidian) {
+    window.marksidian.showContextMenu();
   }
 });
 
 // Keyboard shortcut: Cmd+S / Cmd+Shift+S
 document.addEventListener('keydown', async (e) => {
-  if (!window.lume) return;
+  if (!window.marksidian) return;
 
   if ((e.metaKey || e.ctrlKey) && e.key === 's' && !e.shiftKey) {
     e.preventDefault();

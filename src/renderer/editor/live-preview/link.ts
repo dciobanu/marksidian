@@ -87,8 +87,8 @@ export const linkClickHandler = EditorView.domEventHandlers({
     if (!linkEl) return false;
 
     const url = linkEl.getAttribute('data-url');
-    if (url && window.lume) {
-      window.lume.openExternal(url);
+    if (url && window.marksidian) {
+      window.marksidian.openExternal(url);
       return true;
     }
     return false;

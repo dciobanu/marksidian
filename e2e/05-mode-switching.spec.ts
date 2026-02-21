@@ -10,8 +10,8 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   await page.evaluate(() => {
-    (window as any).__lume.markSaved();
-    window.lume.notifyContentChanged(false);
+    (window as any).__marksidian.markSaved();
+    window.marksidian.notifyContentChanged(false);
   }).catch(() => {});
   await app.close();
 });
@@ -30,7 +30,7 @@ test.describe('Mode switching', () => {
   });
 
   test('switch to source mode via switchToMode', async () => {
-    await page.evaluate(() => (window as any).__lume.switchToMode('source'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('source'));
     await page.waitForTimeout(100);
 
     const mode = await getMode(page);
@@ -43,7 +43,7 @@ test.describe('Mode switching', () => {
   });
 
   test('source mode shows raw markdown markers', async () => {
-    await page.evaluate(() => (window as any).__lume.switchToMode('source'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('source'));
     await setDoc(page, '# Heading\n\n**bold text**');
     await page.waitForTimeout(100);
 
@@ -54,7 +54,7 @@ test.describe('Mode switching', () => {
   });
 
   test('switch back to live mode restores decorations', async () => {
-    await page.evaluate(() => (window as any).__lume.switchToMode('live'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('live'));
     await page.waitForTimeout(100);
 
     const mode = await getMode(page);
@@ -68,7 +68,7 @@ test.describe('Mode switching', () => {
 
   test('switch to reading mode hides editor, shows reading view', async () => {
     await setDoc(page, '# Reading Test\n\nSome content here.');
-    await page.evaluate(() => (window as any).__lume.switchToMode('reading'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('reading'));
     await page.waitForTimeout(200);
 
     const editorVisible = await page.evaluate(() =>
@@ -83,7 +83,7 @@ test.describe('Mode switching', () => {
   });
 
   test('switch back from reading mode shows editor', async () => {
-    await page.evaluate(() => (window as any).__lume.switchToMode('live'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('live'));
     await page.waitForTimeout(100);
 
     const editorVisible = await page.evaluate(() =>
@@ -96,20 +96,20 @@ test.describe('Mode switching', () => {
   });
 
   test('mode cycling: live -> source -> live', async () => {
-    await page.evaluate(() => (window as any).__lume.switchToMode('live'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('live'));
     expect(await getMode(page)).toBe('live');
 
-    await page.evaluate(() => (window as any).__lume.switchToMode('source'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('source'));
     expect(await getMode(page)).toBe('source');
 
-    await page.evaluate(() => (window as any).__lume.switchToMode('live'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('live'));
     expect(await getMode(page)).toBe('live');
   });
 });
 
 test.describe('Status bar', () => {
   test('shows initial state: line 1, col 1, 0 words', async () => {
-    await page.evaluate(() => (window as any).__lume.switchToMode('live'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('live'));
     await setDoc(page, '');
     await focusEditor(page);
     await page.waitForTimeout(100);
@@ -142,7 +142,7 @@ test.describe('Status bar', () => {
     await setDoc(page, 'Line 1\nLine 2\nLine 3');
     // Place cursor at line 3
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const line3 = view.state.doc.line(3);
       view.dispatch({ selection: { anchor: line3.from + 2 } });
     });
@@ -154,11 +154,11 @@ test.describe('Status bar', () => {
   });
 
   test('mode indicator updates with mode changes', async () => {
-    await page.evaluate(() => (window as any).__lume.switchToMode('live'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('live'));
     await page.waitForTimeout(100);
     const liveStatus = await getStatusBar(page);
 
-    await page.evaluate(() => (window as any).__lume.switchToMode('source'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('source'));
     await page.waitForTimeout(100);
     const sourceStatus = await getStatusBar(page);
 
@@ -166,13 +166,13 @@ test.describe('Status bar', () => {
     expect(sourceStatus.mode).toBeTruthy();
 
     // Restore live mode
-    await page.evaluate(() => (window as any).__lume.switchToMode('live'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('live'));
   });
 });
 
 test.describe('Keyboard shortcuts — formatting', () => {
   test.beforeEach(async () => {
-    await page.evaluate(() => (window as any).__lume.switchToMode('live'));
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('live'));
     await setDoc(page, '');
     await focusEditor(page);
   });
@@ -250,7 +250,7 @@ test.describe('Keyboard shortcuts — formatting', () => {
     await setDoc(page, '# Title');
     await focusEditor(page);
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: 3 } });
     });
     await press(page, 'Meta+Shift+=');
@@ -264,7 +264,7 @@ test.describe('Keyboard shortcuts — formatting', () => {
     await setDoc(page, '## Title');
     await focusEditor(page);
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: 3 } });
     });
     await press(page, 'Meta+Shift+-');
@@ -278,12 +278,12 @@ test.describe('Keyboard shortcuts — formatting', () => {
     await setDoc(page, '- [ ] Task item');
     await focusEditor(page);
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: 8 } });
     });
     // Use the CM6 command directly since Meta+Enter may be intercepted
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       // Simulate the toggleCheckbox command
       const line = view.state.doc.lineAt(view.state.selection.main.from);
       const text = line.text;
@@ -304,12 +304,12 @@ test.describe('Keyboard shortcuts — formatting', () => {
     await setDoc(page, '- [x] Done item');
     await focusEditor(page);
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: 8 } });
     });
     // Use the CM6 command directly
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const line = view.state.doc.lineAt(view.state.selection.main.from);
       const text = line.text;
       const checkedMatch = text.match(/^(\s*- )\[x\](.*)/i);
@@ -359,7 +359,7 @@ test.describe('Keyboard shortcuts — editing', () => {
     await page.waitForTimeout(50);
 
     const selection = await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const { from, to } = view.state.selection.main;
       return { from, to, length: to - from };
     });

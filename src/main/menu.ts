@@ -156,7 +156,7 @@ export function buildMenu(): void {
         {
           label: 'Learn More',
           click: () => {
-            shell.openExternal('https://github.com/YOUR_ORG/lume');
+            shell.openExternal('https://github.com/YOUR_ORG/marksidian');
           },
         },
       ],

@@ -7,13 +7,13 @@ let page: Page;
 test.beforeAll(async () => {
   ({ app, page } = await launchApp());
   // Ensure live preview mode
-  await page.evaluate(() => (window as any).__lume.switchToMode('live'));
+  await page.evaluate(() => (window as any).__marksidian.switchToMode('live'));
 });
 
 test.afterAll(async () => {
   await page.evaluate(() => {
-    (window as any).__lume.markSaved();
-    window.lume.notifyContentChanged(false);
+    (window as any).__marksidian.markSaved();
+    window.marksidian.notifyContentChanged(false);
   }).catch(() => {});
   await app.close();
 });
@@ -135,7 +135,7 @@ test.describe('Selection', () => {
     await press(page, 'Shift+ArrowRight');
 
     const sel = await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const { from, to } = view.state.selection.main;
       return { from, to };
     });
@@ -149,7 +149,7 @@ test.describe('Selection', () => {
     await press(page, 'Meta+a');
 
     const sel = await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const { from, to } = view.state.selection.main;
       return { from, to, docLen: view.state.doc.length };
     });
@@ -164,7 +164,7 @@ test.describe('Selection', () => {
     await press(page, 'Shift+Meta+ArrowRight');
 
     const sel = await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const { from, to } = view.state.selection.main;
       return view.state.doc.sliceString(from, to);
     });
@@ -178,7 +178,7 @@ test.describe('Selection', () => {
     // Double-click on 'World' — we need to find the right coordinates
     // Instead, use programmatic word selection
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       // Position inside 'World' (offset 6)
       const pos = 6;
       const line = view.state.doc.lineAt(pos);
@@ -195,7 +195,7 @@ test.describe('Selection', () => {
     await page.waitForTimeout(50);
 
     const sel = await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const { from, to } = view.state.selection.main;
       return view.state.doc.sliceString(from, to);
     });
@@ -207,14 +207,14 @@ test.describe('Selection', () => {
     await focusEditor(page);
     // Select 'World'
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: 6, head: 11 } });
     });
-    await page.keyboard.type('Lume');
+    await page.keyboard.type('Marksidian');
     await page.waitForTimeout(100);
 
     const doc = await getDoc(page);
-    expect(doc).toBe('Hello Lume');
+    expect(doc).toBe('Hello Marksidian');
   });
 
   test('backspace deletes selection', async () => {
@@ -222,7 +222,7 @@ test.describe('Selection', () => {
     await focusEditor(page);
     // Select 'BCD'
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: 1, head: 4 } });
     });
     await press(page, 'Backspace');
@@ -268,7 +268,7 @@ test.describe('Multi-line navigation and editing', () => {
     await setDoc(page, 'Line 1\nDelete me\nLine 3');
     // Select entire line 2
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const line2 = view.state.doc.line(2);
       view.dispatch({ selection: { anchor: line2.from, head: line2.to } });
     });
@@ -341,7 +341,7 @@ test.describe('Navigation in large documents', () => {
     await setDoc(page, '# Title\n\n| A | B |\n| -- | -- |\n| 1 | 2 |');
     // Place cursor at end of last table row
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const lastLine = view.state.doc.line(view.state.doc.lines);
       view.dispatch({ selection: { anchor: lastLine.to } });
       view.focus();
@@ -367,7 +367,7 @@ test.describe('Clipboard operations', () => {
     await focusEditor(page);
     // Select 'Copy'
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: 0, head: 4 } });
     });
     await press(page, 'Meta+c');
@@ -389,7 +389,7 @@ test.describe('Clipboard operations', () => {
     await focusEditor(page);
     // Select 'Cut'
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: 0, head: 3 } });
     });
     await press(page, 'Meta+x');

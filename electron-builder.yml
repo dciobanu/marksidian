@@ -1,6 +1,6 @@
-appId: com.lume.editor
-productName: Lume
-copyright: Copyright © 2026 Lume Contributors
+appId: com.marksidian.editor
+productName: Marksidian
+copyright: Copyright © 2026 Marksidian Contributors
 
 directories:
   output: release

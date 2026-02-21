@@ -174,7 +174,7 @@ fn main() {
 
 ```json
 {
-  "name": "lume",
+  "name": "marksidian",
   "version": "0.1.0",
   "description": "A markdown editor"
 }

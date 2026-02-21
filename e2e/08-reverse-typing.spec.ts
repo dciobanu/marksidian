@@ -12,8 +12,8 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   await page.evaluate(() => {
-    (window as any).__lume.markSaved();
-    window.lume.notifyContentChanged(false);
+    (window as any).__marksidian.markSaved();
+    window.marksidian.notifyContentChanged(false);
   }).catch(() => {});
   await app.close();
 });
@@ -23,13 +23,13 @@ test.afterAll(async () => {
 // each prepended at position 0. The final document reads P1→P10.
 
 const P1 = [
-  '# Lume — Product & Technical Specification',
+  '# Marksidian — Product & Technical Specification',
   '',
   '**Version:** 1.0 · **Date:** February 19, 2026 · **Status:** Draft for engineering handoff',
 ].join('\n');
 
 const P2 = [
-  '> **Lume** is a working name. Replace throughout before public release.',
+  '> **Marksidian** is a working name. Replace throughout before public release.',
 ].join('\n');
 
 const P3 = [
@@ -49,7 +49,7 @@ const P4 = [
 const P5 = [
   '## 1. Executive Summary',
   '',
-  'Lume is an **open-source, macOS-native markdown editor** that replicates the editing experience of Obsidian\'s Live Preview mode. It operates on **single files** (not vaults), uses the **same core technologies** as Obsidian (Electron + CodeMirror 6), and is distributed exclusively via **Homebrew**.',
+  'Marksidian is an **open-source, macOS-native markdown editor** that replicates the editing experience of Obsidian\'s Live Preview mode. It operates on **single files** (not vaults), uses the **same core technologies** as Obsidian (Electron + CodeMirror 6), and is distributed exclusively via **Homebrew**.',
 ].join('\n');
 
 const P6 = [
@@ -95,7 +95,7 @@ const P10 = [
 
 async function prependText(page: Page, text: string): Promise<void> {
   await page.evaluate((t) => {
-    const view = (window as any).__lume.getEditorView();
+    const view = (window as any).__marksidian.getEditorView();
     view.dispatch({
       changes: { from: 0, to: 0, insert: t },
     });
@@ -115,7 +115,7 @@ async function prependText(page: Page, text: string): Promise<void> {
  */
 async function scrollToTopSafe(page: Page): Promise<void> {
   await page.evaluate(() => {
-    const view = (window as any).__lume.getEditorView();
+    const view = (window as any).__marksidian.getEditorView();
     const doc = view.state.doc;
     // Find the first blank line
     for (let n = 1; n <= Math.min(doc.lines, 20); n++) {
@@ -137,7 +137,7 @@ async function scrollToTopSafe(page: Page): Promise<void> {
  */
 async function scrollToBottomSafe(page: Page): Promise<void> {
   await page.evaluate(() => {
-    const view = (window as any).__lume.getEditorView();
+    const view = (window as any).__marksidian.getEditorView();
     const doc = view.state.doc;
     // Search backward from end for a blank line
     for (let n = doc.lines; n >= 1; n--) {
@@ -160,7 +160,7 @@ async function scrollToBottomSafe(page: Page): Promise<void> {
  */
 async function scrollToText(page: Page, text: string): Promise<void> {
   await page.evaluate((t) => {
-    const view = (window as any).__lume.getEditorView();
+    const view = (window as any).__marksidian.getEditorView();
     const doc = view.state.doc;
     const docText = doc.toString();
     const idx = docText.indexOf(t);
@@ -329,7 +329,7 @@ test.describe('Reverse-typing stress test (Product Technical Specification)', ()
 
     // Verify document starts with the H1 heading
     const lines = await getLineInfo(page);
-    expect(lines[0].text).toContain('Lume');
+    expect(lines[0].text).toContain('Marksidian');
     expect(lines[0].classes).toContain('HyperMD-header-1');
   });
 
@@ -481,7 +481,7 @@ test.describe('Cut & paste stress test (swap sections 4.3 ↔ 4.4)', () => {
    */
   async function selectAndCut(page: Page, from: number, to: number): Promise<void> {
     await page.evaluate(([f, t]) => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: f, head: t } });
       view.focus();
     }, [from, to]);
@@ -495,7 +495,7 @@ test.describe('Cut & paste stress test (swap sections 4.3 ↔ 4.4)', () => {
    */
   async function pasteAt(page: Page, offset: number): Promise<void> {
     await page.evaluate((o) => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: o } });
       view.focus();
     }, offset);
@@ -509,7 +509,7 @@ test.describe('Cut & paste stress test (swap sections 4.3 ↔ 4.4)', () => {
    */
   async function indexOf(page: Page, needle: string): Promise<number> {
     const idx = await page.evaluate((n) => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       return view.state.doc.toString().indexOf(n);
     }, needle);
     if (idx < 0) throw new Error(`"${needle.slice(0, 50)}" not found`);
@@ -522,7 +522,7 @@ test.describe('Cut & paste stress test (swap sections 4.3 ↔ 4.4)', () => {
    */
   async function headingEnd(page: Page, heading: string): Promise<number> {
     return page.evaluate((h) => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const text = view.state.doc.toString();
       const idx = text.indexOf(h);
       if (idx < 0) throw new Error(`Heading "${h}" not found`);
@@ -547,7 +547,7 @@ test.describe('Cut & paste stress test (swap sections 4.3 ↔ 4.4)', () => {
     // ── Capture exact original bodies for later matching ──────────
     // Body = everything from the heading line (inclusive) + 1 newline
     // through to just before the NEXT heading line.
-    // So body43 = "\n```\nlume/\n...\n```\n\n"
+    // So body43 = "\n```\nmarksidian/\n...\n```\n\n"
     // (starts with the \n after heading, ends with the \n before next heading)
     const origBody43 = original.slice(
       original.indexOf(SEC_43) + SEC_43.length + 1,  // after heading's \n
@@ -579,7 +579,7 @@ test.describe('Cut & paste stress test (swap sections 4.3 ↔ 4.4)', () => {
 
     // Verify both bodies visible between 4.4 and 4.5
     doc = await getDoc(page);
-    expect(doc.slice(doc.indexOf(SEC_44), doc.indexOf(SEC_45))).toContain('lume/');
+    expect(doc.slice(doc.indexOf(SEC_44), doc.indexOf(SEC_45))).toContain('marksidian/');
     expect(doc.slice(doc.indexOf(SEC_44), doc.indexOf(SEC_45))).toContain('.app-container');
 
     // ── Step 3: Cut section 4.4's ORIGINAL body ──────────────────
@@ -604,9 +604,9 @@ test.describe('Cut & paste stress test (swap sections 4.3 ↔ 4.4)', () => {
     expect(swp44).toBeLessThan(swp45);
     // 4.3 now has CSS naming content (was 4.4's)
     expect(doc.slice(swp43, swp44)).toContain('.app-container');
-    expect(doc.slice(swp43, swp44)).not.toContain('lume/');
+    expect(doc.slice(swp43, swp44)).not.toContain('marksidian/');
     // 4.4 now has directory tree content (was 4.3's)
-    expect(doc.slice(swp44, swp45)).toContain('lume/');
+    expect(doc.slice(swp44, swp45)).toContain('marksidian/');
     expect(doc.slice(swp44, swp45)).not.toContain('.app-container');
 
     // ═══ REVERSE SWAP: restore original order ═════════════════════

@@ -14,7 +14,7 @@ export async function readFile(filePath: string): Promise<string> {
 }
 
 export async function writeFile(filePath: string, content: string): Promise<void> {
-  const tmpPath = filePath + '.lume-tmp';
+  const tmpPath = filePath + '.marksidian-tmp';
   await fs.promises.writeFile(tmpPath, content, 'utf-8');
   await fs.promises.rename(tmpPath, filePath);
 }

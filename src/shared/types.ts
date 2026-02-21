@@ -32,7 +32,7 @@ export interface SaveResult {
   path: string;
 }
 
-export interface LumeAPI {
+export interface MarksidianAPI {
   save: (content: string) => Promise<SaveResult>;
   saveAs: (content: string) => Promise<SaveResult>;
   notifyContentChanged: (isDirty: boolean) => void;
@@ -57,6 +57,6 @@ export interface LumeAPI {
 
 declare global {
   interface Window {
-    lume: LumeAPI;
+    marksidian: MarksidianAPI;
   }
 }

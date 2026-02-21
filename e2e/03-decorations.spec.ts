@@ -14,8 +14,8 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   // Mark saved to prevent "unsaved changes" dialog from blocking close
   await page.evaluate(() => {
-    (window as any).__lume.markSaved();
-    window.lume.notifyContentChanged(false);
+    (window as any).__marksidian.markSaved();
+    window.marksidian.notifyContentChanged(false);
   }).catch(() => {});
   await app.close();
 });
@@ -38,7 +38,7 @@ test.describe('Headings', () => {
   test('H1 applies HyperMD-header-1 class', async () => {
     await setDoc(page, '# Heading One\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const lines = await getLineInfo(page);
@@ -50,7 +50,7 @@ test.describe('Headings', () => {
     await setDoc(page, '## Heading Two\n\nParagraph');
     // Put cursor on the paragraph so heading decorations apply
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const lines = await getLineInfo(page);
@@ -61,7 +61,7 @@ test.describe('Headings', () => {
   test('# marks are hidden when cursor is away', async () => {
     await setDoc(page, '# Hello\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const lines = await getLineInfo(page);
@@ -86,7 +86,7 @@ test.describe('Headings', () => {
   test('all 6 heading levels render', async () => {
     await setDoc(page, '# H1\n## H2\n### H3\n#### H4\n##### H5\n###### H6\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const lines = await getLineInfo(page);
@@ -103,7 +103,7 @@ test.describe('Emphasis', () => {
   test('bold markers are hidden when cursor is away', async () => {
     await setDoc(page, '**bold text** normal\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const has = await editorHas(page, '.cm-lp-strong');
@@ -113,7 +113,7 @@ test.describe('Emphasis', () => {
   test('italic markers are hidden when cursor is away', async () => {
     await setDoc(page, '*italic text* normal\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const has = await editorHas(page, '.cm-lp-em');
@@ -128,7 +128,7 @@ test.describe('Emphasis', () => {
     // Scroll the target line into the viewport, with cursor placed
     // a few lines below so it's NOT on the emphasis line
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const doc = view.state.doc.toString();
       const targetText = '**Complexity** for finding *any*';
       const idx = doc.indexOf(targetText);
@@ -179,7 +179,7 @@ test.describe('Emphasis', () => {
 
     // Scroll to the bottom of the document
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const doc = view.state.doc;
       view.dispatch({
         selection: { anchor: doc.length },
@@ -203,7 +203,7 @@ test.describe('Emphasis', () => {
 
     // Now scroll back to the top
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({
         selection: { anchor: 0 },
         scrollIntoView: true,
@@ -227,7 +227,7 @@ test.describe('Emphasis', () => {
   test('strikethrough markers are hidden when cursor is away', async () => {
     await setDoc(page, '~~struck~~ normal\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const has = await editorHas(page, '.cm-lp-strikethrough');
@@ -241,7 +241,7 @@ test.describe('Highlight', () => {
   test('==highlight== renders with decoration', async () => {
     await setDoc(page, '==highlighted== normal\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const has = await editorHas(page, '.cm-lp-highlight');
@@ -255,7 +255,7 @@ test.describe('Inline Code', () => {
   test('inline code renders with decoration', async () => {
     await setDoc(page, '`code` normal\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const has = await editorHas(page, '.cm-lp-inline-code');
@@ -269,7 +269,7 @@ test.describe('Code Blocks', () => {
   test('fenced code block gets background styling', async () => {
     await setDoc(page, '```js\nconst x = 1;\n```\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     // Poll for the decoration — syntax tree parsing is async
     await expect.poll(async () => {
@@ -281,7 +281,7 @@ test.describe('Code Blocks', () => {
   test('language label is shown when cursor is outside', async () => {
     await setDoc(page, '```javascript\nconst x = 1;\n```\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     // Poll for the widget — syntax tree parsing is async
     await expect.poll(async () => {
@@ -296,7 +296,7 @@ test.describe('Links', () => {
   test('link renders with decoration class', async () => {
     await setDoc(page, '[Click me](https://example.com)\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const has = await editorHas(page, '.cm-lp-link');
@@ -306,7 +306,7 @@ test.describe('Links', () => {
   test('link URL is stored in data attribute', async () => {
     await setDoc(page, '[Click me](https://example.com)\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const url = await page.evaluate(() => {
@@ -323,7 +323,7 @@ test.describe('Images', () => {
   test('image widget renders when cursor is away', async () => {
     await setDoc(page, '![alt](https://via.placeholder.com/50)\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(300);
     const has = await editorHas(page, '.cm-lp-image-widget');
@@ -337,7 +337,7 @@ test.describe('Lists', () => {
   test('bullet list renders bullet widgets', async () => {
     await setDoc(page, '- Item A\n- Item B\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const count = await editorCount(page, '.cm-lp-bullet');
@@ -351,7 +351,7 @@ test.describe('Task Lists', () => {
   test('checkboxes render for task items', async () => {
     await setDoc(page, '- [ ] Task A\n- [x] Task B\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const count = await editorCount(page, '.cm-lp-checkbox');
@@ -361,7 +361,7 @@ test.describe('Task Lists', () => {
   test('clicking checkbox toggles its state in the document', async () => {
     await setDoc(page, '- [ ] Toggle me\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     // Click the checkbox
@@ -369,7 +369,7 @@ test.describe('Task Lists', () => {
     if (await checkbox.isVisible()) {
       await checkbox.click();
       await page.waitForTimeout(200);
-      const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
+      const doc = await page.evaluate(() => (window as any).__marksidian.getEditorContent());
       expect(doc).toContain('[x]');
     }
   });
@@ -381,7 +381,7 @@ test.describe('Blockquotes', () => {
   test('blockquote line decoration applies', async () => {
     await setDoc(page, '> Quoted text\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(200);
     const lines = await getLineInfo(page);
@@ -396,7 +396,7 @@ test.describe('Horizontal Rules', () => {
   test('--- renders as hr widget', async () => {
     await setDoc(page, 'Before\n\n---\n\nAfter');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('After')
+      (window as any).__marksidian.getEditorContent().indexOf('After')
     ));
     await page.waitForTimeout(200);
     const has = await editorHas(page, '.cm-lp-hr-widget');
@@ -410,7 +410,7 @@ test.describe('Tables', () => {
   test('table renders as HTML table widget when cursor is outside', async () => {
     await setDoc(page, '| A | B |\n| -- | -- |\n| 1 | 2 |\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await expect.poll(async () => {
       return await editorHas(page, '.cm-lp-table-widget');
@@ -420,7 +420,7 @@ test.describe('Tables', () => {
   test('table widget has proper thead and tbody', async () => {
     await setDoc(page, '| A | B |\n| -- | -- |\n| 1 | 2 |\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await expect.poll(async () => {
       return await editorHas(page, '.cm-lp-table-widget');
@@ -462,7 +462,7 @@ test.describe('Tables', () => {
     await setDoc(page, '| A | B |\n| -- | -- |\n| 1 | 2 |\n\nParagraph');
     // Move cursor away to Paragraph so table renders as widget
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await expect.poll(async () => {
       return await editorHas(page, '.cm-lp-table-widget');
@@ -488,7 +488,7 @@ test.describe('Tables', () => {
     //         | 1 | 2 |    (line 3)
     await setDoc(page, '| A | B |\n| -- | -- |\n| 1 | 2 |\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await expect.poll(async () => {
       return await editorHas(page, '.cm-lp-table-widget');
@@ -514,7 +514,7 @@ test.describe('Tables', () => {
   test('table respects column alignment', async () => {
     await setDoc(page, '| Left | Center | Right |\n| :--- | :---: | ---: |\n| a | b | c |\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await expect.poll(async () => {
       return await editorHas(page, '.cm-lp-table-widget');
@@ -531,7 +531,7 @@ test.describe('Tables', () => {
     await setDoc(page, '| A | B |\n| -- | -- |\n| 1 | 2 |');
     // Put cursor at the end of the document
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       const end = view.state.doc.length;
       view.dispatch({ selection: { anchor: end } });
       view.focus();
@@ -540,7 +540,7 @@ test.describe('Tables', () => {
     await page.keyboard.press('Enter');
     await page.keyboard.type('After table');
     await page.waitForTimeout(200);
-    const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
+    const doc = await page.evaluate(() => (window as any).__marksidian.getEditorContent());
     expect(doc).toContain('After table');
     const pos = await getCursorPos(page);
     const lines = doc.split('\n');
@@ -554,7 +554,7 @@ test.describe('Frontmatter', () => {
   test('frontmatter collapses to Properties toggle', async () => {
     await setDoc(page, '---\ntitle: Test\ndate: 2026-01-01\n---\n\n# Heading');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Heading')
+      (window as any).__marksidian.getEditorContent().indexOf('Heading')
     ));
     // Poll — frontmatter parsing and decoration is async
     await expect.poll(async () => {
@@ -583,7 +583,7 @@ test.describe('Full CommonMark fixture', () => {
   test('loads without errors', async () => {
     const { loadFixture } = require('./helpers');
     await loadFixture(page, 'commonmark-full.md');
-    const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
+    const doc = await page.evaluate(() => (window as any).__marksidian.getEditorContent());
     expect(doc).toContain('# Heading Level 1');
     expect(doc).toContain('## Paragraphs');
     expect(doc).toContain('## Horizontal Rules');
@@ -595,7 +595,7 @@ test.describe('Full CommonMark fixture', () => {
     await loadFixture(page, 'commonmark-full.md');
     // Cursor at end so decorations apply
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: view.state.doc.length } });
     });
     await page.waitForTimeout(300);
@@ -611,7 +611,7 @@ test.describe('Extensions fixture', () => {
   test('loads without errors', async () => {
     const { loadFixture } = require('./helpers');
     await loadFixture(page, 'extensions.md');
-    const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
+    const doc = await page.evaluate(() => (window as any).__marksidian.getEditorContent());
     expect(doc).toContain('## Highlight');
     expect(doc).toContain('## Math');
     expect(doc).toContain('## Footnotes');
@@ -624,7 +624,7 @@ test.describe('Stress test fixture', () => {
   test('loads without errors', async () => {
     const { loadFixture } = require('./helpers');
     await loadFixture(page, 'stress-test.md');
-    const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
+    const doc = await page.evaluate(() => (window as any).__marksidian.getEditorContent());
     expect(doc).toContain('# Stress Test Document');
     expect(doc).toContain('## End of Stress Test');
   });
@@ -633,14 +633,14 @@ test.describe('Stress test fixture', () => {
     await loadFixture(page, 'stress-test.md');
     // Type at the end — should work without hanging
     await page.evaluate(() => {
-      const view = (window as any).__lume.getEditorView();
+      const view = (window as any).__marksidian.getEditorView();
       view.dispatch({ selection: { anchor: view.state.doc.length } });
       view.focus();
     });
     await page.keyboard.press('Enter');
     await page.keyboard.type('Responsive!');
     await page.waitForTimeout(200);
-    const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
+    const doc = await page.evaluate(() => (window as any).__marksidian.getEditorContent());
     expect(doc).toContain('Responsive!');
   });
 });
@@ -689,7 +689,7 @@ test.describe('Math widgets', () => {
     // Widget should disappear, raw $E=mc^2$ visible
     const stillHasWidget = await editorHas(page, '.cm-lp-math-widget');
     expect(stillHasWidget).toBe(false);
-    const doc = await page.evaluate(() => (window as any).__lume.getEditorContent());
+    const doc = await page.evaluate(() => (window as any).__marksidian.getEditorContent());
     expect(doc).toContain('$E=mc^2$');
   });
 
@@ -723,7 +723,7 @@ test.describe('Math widgets', () => {
     // "$0\le r \le n$" should render as math (digit + backslash = LaTeX)
     await setDoc(page, 'where $0\\le r \\le n$\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await page.waitForTimeout(300);
 
@@ -748,7 +748,7 @@ test.describe('Code block readability', () => {
   test('code block has explicit text color set', async () => {
     await setDoc(page, '```js\nconst x = 1;\n```\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await expect.poll(async () => {
       return await editorHas(page, '.cm-lp-code-block');
@@ -769,7 +769,7 @@ test.describe('Code block readability', () => {
   test('syntax highlighting spans inside code block inherit code-normal color', async () => {
     await setDoc(page, '```js\nconst x = 1;\n```\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await expect.poll(async () => {
       return await editorHas(page, '.cm-lp-code-block');
@@ -805,7 +805,7 @@ test.describe('Code block readability', () => {
 
     await setDoc(page, '```sh\nls -la\nps axu\n```\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
-      (window as any).__lume.getEditorContent().indexOf('Paragraph')
+      (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));
     await expect.poll(async () => {
       return await editorHas(page, '.cm-lp-code-block');
@@ -892,7 +892,7 @@ test.describe('Context menu', () => {
     // We can't easily verify the native menu popup in Playwright, but we can
     // verify the IPC channel is wired up by checking the preload API exists.
     const hasContextMenu = await page.evaluate(() => {
-      return typeof window.lume?.showContextMenu === 'function';
+      return typeof window.marksidian?.showContextMenu === 'function';
     });
     expect(hasContextMenu).toBe(true);
   });

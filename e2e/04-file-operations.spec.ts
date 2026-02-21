@@ -13,41 +13,41 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   await page.evaluate(() => {
-    (window as any).__lume.markSaved();
-    window.lume.notifyContentChanged(false);
+    (window as any).__marksidian.markSaved();
+    window.marksidian.notifyContentChanged(false);
   }).catch(() => {});
   await app.close();
 });
 
 test.describe('File operations', () => {
   test('editor starts with no file path', async () => {
-    const filePath = await page.evaluate(() => window.lume.getFilePath());
+    const filePath = await page.evaluate(() => window.marksidian.getFilePath());
     expect(filePath).toBeNull();
   });
 
   test('typing makes editor dirty', async () => {
     await setDoc(page, '');
-    const cleanBefore = await page.evaluate(() => (window as any).__lume.isDirty());
+    const cleanBefore = await page.evaluate(() => (window as any).__marksidian.isDirty());
     expect(cleanBefore).toBe(false);
 
     await typeText(page, 'hello');
-    const dirtyAfter = await page.evaluate(() => (window as any).__lume.isDirty());
+    const dirtyAfter = await page.evaluate(() => (window as any).__marksidian.isDirty());
     expect(dirtyAfter).toBe(true);
   });
 
   test('markSaved clears dirty state', async () => {
     await setDoc(page, '');
     await typeText(page, 'some change');
-    expect(await page.evaluate(() => (window as any).__lume.isDirty())).toBe(true);
+    expect(await page.evaluate(() => (window as any).__marksidian.isDirty())).toBe(true);
 
-    await page.evaluate(() => (window as any).__lume.markSaved());
-    expect(await page.evaluate(() => (window as any).__lume.isDirty())).toBe(false);
+    await page.evaluate(() => (window as any).__marksidian.markSaved());
+    expect(await page.evaluate(() => (window as any).__marksidian.isDirty())).toBe(false);
   });
 
   test('setEditorContent resets dirty state', async () => {
     await typeText(page, 'dirty');
     await setDoc(page, 'clean content');
-    expect(await page.evaluate(() => (window as any).__lume.isDirty())).toBe(false);
+    expect(await page.evaluate(() => (window as any).__marksidian.isDirty())).toBe(false);
   });
 
   test('document content survives programmatic round-trip', async () => {
@@ -78,8 +78,8 @@ test.describe('File operations', () => {
     // Mark saved clears isDirty, but doesn't directly call notifyContentChanged.
     // The renderer calls notifyContentChanged(false) after a save. Simulate that.
     await page.evaluate(() => {
-      (window as any).__lume.markSaved();
-      window.lume.notifyContentChanged(false);
+      (window as any).__marksidian.markSaved();
+      window.marksidian.notifyContentChanged(false);
     });
 
     const isDirty = await app.evaluate(({ BrowserWindow }) => {
@@ -115,22 +115,22 @@ test.describe('File open via IPC push', () => {
         // need to go through the electron API.
         // Since we can't easily reach ipcRenderer in the renderer, we simulate
         // what the listener does: set content and mark saved.
-        (window as any).__lume.setEditorContent(content);
-        (window as any).__lume.markSaved();
+        (window as any).__marksidian.setEditorContent(content);
+        (window as any).__marksidian.markSaved();
       },
       { content: testContent, filePath: testPath, dir: testDir }
     );
 
     const doc = await getDoc(page);
     expect(doc).toBe(testContent);
-    expect(await page.evaluate(() => (window as any).__lume.isDirty())).toBe(false);
+    expect(await page.evaluate(() => (window as any).__marksidian.isDirty())).toBe(false);
   });
 });
 
 test.describe('Save via Electron IPC', () => {
   test('save to temp file works end-to-end', async () => {
     // Create a temp file path
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lume-test-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'marksidian-test-'));
     const tmpFile = path.join(tmpDir, 'test-save.md');
 
     // Set a known file path for the window

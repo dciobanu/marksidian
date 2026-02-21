@@ -1,8 +1,8 @@
-# Lume — Product & Technical Specification
+# Marksidian — Product & Technical Specification
 
 **Version:** 1.0 · **Date:** February 19, 2026 · **Status:** Draft for engineering handoff
 
-> **Lume** is a working name. Replace throughout before public release.
+> **Marksidian** is a working name. Replace throughout before public release.
 
 ---
 
@@ -24,7 +24,7 @@
 
 ## 1. Executive Summary
 
-Lume is an **open-source, macOS-native markdown editor** that replicates the editing experience of Obsidian's Live Preview mode. It operates on **single files** (not vaults), uses the **same core technologies** as Obsidian (Electron + CodeMirror 6), and is distributed exclusively via **Homebrew**.
+Marksidian is an **open-source, macOS-native markdown editor** that replicates the editing experience of Obsidian's Live Preview mode. It operates on **single files** (not vaults), uses the **same core technologies** as Obsidian (Electron + CodeMirror 6), and is distributed exclusively via **Homebrew**.
 
 The initial release (v0.1) delivers one thing extremely well: a CodeMirror 6-based hybrid WYSIWYG/source editor that opens, edits, and saves individual `.md` files with full markdown rendering fidelity. No vault management, no file trees, no linking, no graph view. Just the best possible single-file markdown editing experience on macOS.
 
@@ -303,7 +303,7 @@ ipcMain.handle(IPC_INVOKE.SAVE, async (event, { content }: { content: string }) 
 ```typescript
 // Clean async/await — no event listener management
 try {
-  const { path } = await window.lume.save(content);
+  const { path } = await window.marksidian.save(content);
   // Save succeeded
 } catch (err) {
   // Save failed — show error
@@ -313,7 +313,7 @@ try {
 ### 4.3 Directory Structure
 
 ```
-lume/
+marksidian/
 ├── src/
 │   ├── main/                       # Electron main process
 │   │   ├── main.ts                 # Entry point — app lifecycle, window creation
@@ -408,7 +408,7 @@ For heading levels in the editor, Obsidian uses `HyperMD-header-N` classes. Repl
 ```
 1. User double-clicks file.md in Finder
         │
-2. macOS launches Lume (or activates it) via file association
+2. macOS launches Marksidian (or activates it) via file association
         │
 3. Main process receives 'open-file' event with file path
         │
@@ -426,7 +426,7 @@ For heading levels in the editor, Obsidian uses `HyperMD-header-N` classes. Repl
         │
 10. User edits → CM6 dispatches transactions → decorations update
         │
-11. On Cmd+S → renderer calls await window.lume.save(content)
+11. On Cmd+S → renderer calls await window.marksidian.save(content)
         │
 12. Main process handler writes content atomically via temp+rename
         │
@@ -602,16 +602,16 @@ The markdown file is never modified. All path handling happens at render time wh
 // main process — run once at app startup
 import { protocol, net } from 'electron';
 
-protocol.handle('lume-asset', (request) => {
-  // request.url is "lume-asset:///absolute/path/to/image.png"
+protocol.handle('marksidian-asset', (request) => {
+  // request.url is "marksidian-asset:///absolute/path/to/image.png"
   const filePath = decodeURIComponent(new URL(request.url).pathname);
   return net.fetch(`file://${filePath}`);
 });
 ```
 
-The image widget sets `src="lume-asset:///absolute/resolved/path.png"` instead of a raw `file://` URL. This works reliably regardless of `webSecurity` settings and avoids cross-origin issues that plague direct `file://` loads.
+The image widget sets `src="marksidian-asset:///absolute/resolved/path.png"` instead of a raw `file://` URL. This works reliably regardless of `webSecurity` settings and avoids cross-origin issues that plague direct `file://` loads.
 
-3. **What the user sees.** The markdown on disk stays exactly as written (`![](./assets/photo.png)`). The `lume-asset://` URL exists only in the rendered DOM during editing. Saving the file writes back the original markdown text — CM6's document model is plain text, not HTML.
+3. **What the user sees.** The markdown on disk stays exactly as written (`![](./assets/photo.png)`). The `marksidian-asset://` URL exists only in the rendered DOM during editing. Saving the file writes back the original markdown text — CM6's document model is plain text, not HTML.
 
 4. **External URLs.** `![](https://example.com/image.jpg)` — use the URL directly as `src`. No protocol rewrite needed for http/https.
 
@@ -768,7 +768,7 @@ Responsibilities:
 | Operation | Implementation |
 |-----------|---------------|
 | Read file | `fs.promises.readFile(path, 'utf-8')`. Validate UTF-8. Files > 50MB show warning dialog |
-| Write file | Atomic write: write to a temp file in the same directory, then `fs.promises.rename()` to the target path. This guarantees no data loss if Lume crashes mid-save, because `rename()` is atomic on POSIX filesystems (macOS). **Implementation:** write to `${filePath}.lume-tmp`, then `rename()`. Two options: (a) implement the 10-line wrapper yourself (preferred — zero dependencies), or (b) use the `write-file-atomic` npm package if you want battle-tested edge case handling (adds one micro-dependency). Either is acceptable; option (a) aligns better with the minimal-dependency principle |
+| Write file | Atomic write: write to a temp file in the same directory, then `fs.promises.rename()` to the target path. This guarantees no data loss if Marksidian crashes mid-save, because `rename()` is atomic on POSIX filesystems (macOS). **Implementation:** write to `${filePath}.marksidian-tmp`, then `rename()`. Two options: (a) implement the 10-line wrapper yourself (preferred — zero dependencies), or (b) use the `write-file-atomic` npm package if you want battle-tested edge case handling (adds one micro-dependency). Either is acceptable; option (a) aligns better with the minimal-dependency principle |
 | Watch file | `fs.watch(path)` — detect external changes. Notify renderer, which shows "File changed externally. Reload?" banner |
 | Recent files | Store last 10 opened paths in Electron's `app.getPath('userData')/recent-files.json`. Populate `File → Open Recent` menu |
 
@@ -820,11 +820,11 @@ function checkDirty(view: EditorView): boolean {
 
 // After each transaction, notify main process:
 const isDirty = checkDirty(view);
-window.lume.notifyContentChanged(isDirty);
+window.marksidian.notifyContentChanged(isDirty);
 
 // On save success:
 savedDoc = view.state.doc;
-window.lume.notifyContentChanged(false);
+window.marksidian.notifyContentChanged(false);
 ```
 
 Main process responds by updating the window's `documentEdited` property (shows dot on macOS close button) and `representedFilename` (shows filename in title bar with proxy icon):
@@ -950,7 +950,7 @@ This file is architecturally critical. It establishes the CSS custom property na
 
 ```css
 /* ============================================================
-   Lume CSS Variables — Obsidian-Compatible Foundation
+   Marksidian CSS Variables — Obsidian-Compatible Foundation
    
    These variable names match Obsidian's CSS variable system.
    Obsidian themes override these variables to restyle the app.
@@ -1160,9 +1160,9 @@ CSS files are loaded via `<link>` tags in `index.html`, not bundled into JS.
 **File: `electron-builder.yml`**
 
 ```yaml
-appId: com.lume.editor
-productName: Lume
-copyright: Copyright © 2026 Lume Contributors
+appId: com.marksidian.editor
+productName: Marksidian
+copyright: Copyright © 2026 Marksidian Contributors
 
 directories:
   output: release
@@ -1205,29 +1205,29 @@ dmg:
 
 ### 8.4 Homebrew Distribution
 
-Lume distributes as a **Homebrew Cask** (since it's an Electron app, not a CLI tool).
+Marksidian distributes as a **Homebrew Cask** (since it's an Electron app, not a CLI tool).
 
-**Cask formula** (`lume.rb`, submitted to `homebrew/homebrew-cask` or hosted in a custom tap):
+**Cask formula** (`marksidian.rb`, submitted to `homebrew/homebrew-cask` or hosted in a custom tap):
 
 ```ruby
-cask "lume" do
+cask "marksidian" do
   version "0.1.0"
   sha256 "TO_BE_COMPUTED_AT_RELEASE"
 
-  url "https://github.com/YOUR_ORG/lume/releases/download/v#{version}/Lume-#{version}-mac-universal.zip"
-  name "Lume"
+  url "https://github.com/YOUR_ORG/marksidian/releases/download/v#{version}/Marksidian-#{version}-mac-universal.zip"
+  name "Marksidian"
   desc "Markdown editor with Obsidian-style Live Preview"
-  homepage "https://github.com/YOUR_ORG/lume"
+  homepage "https://github.com/YOUR_ORG/marksidian"
 
   auto_updates true
   depends_on macos: ">= :monterey"
 
-  app "Lume.app"
+  app "Marksidian.app"
 
   zap trash: [
-    "~/Library/Application Support/Lume",
-    "~/Library/Preferences/com.lume.editor.plist",
-    "~/Library/Caches/com.lume.editor",
+    "~/Library/Application Support/Marksidian",
+    "~/Library/Preferences/com.marksidian.editor.plist",
+    "~/Library/Caches/com.marksidian.editor",
   ]
 end
 ```
@@ -1239,12 +1239,12 @@ end
 3. CI uploads `.dmg` and `.zip` to GitHub Release
 4. CI computes SHA-256 of `.zip`, updates cask formula, opens PR to Homebrew tap
 
-For initial development, use a **custom tap** (`homebrew-lume`) to avoid the approval process of `homebrew/homebrew-cask`:
+For initial development, use a **custom tap** (`homebrew-marksidian`) to avoid the approval process of `homebrew/homebrew-cask`:
 
 ```bash
 # Users install with:
-brew tap YOUR_ORG/lume
-brew install --cask lume
+brew tap YOUR_ORG/marksidian
+brew install --cask marksidian
 ```
 
 ---
@@ -1305,7 +1305,7 @@ No plugin loading code, API, or manifest format should be built in v0.1.
 | Native menu bar renders | File, Edit, View, Help menus visible |
 | CM6 syntax highlighting works | Pasting `# Hello **world**` shows colored tokens |
 | Light/dark mode switches | Toggling macOS appearance reflects in the editor |
-| App builds to .app bundle | `npm run pack` produces `Lume.app` that launches from Finder |
+| App builds to .app bundle | `npm run pack` produces `Marksidian.app` that launches from Finder |
 
 ### Milestone 2: File Operations (Week 2–3)
 
@@ -1319,7 +1319,7 @@ No plugin loading code, API, or manifest format should be built in v0.1.
 | `Cmd+N` opens new window | New empty editor window appears |
 | Dirty indicator shows | After editing, macOS title bar dot appears. After save, it disappears |
 | Close with unsaved changes prompts | Save/Don't Save/Cancel dialog appears |
-| `.md` file association works | Double-clicking a `.md` file in Finder opens it in Lume |
+| `.md` file association works | Double-clicking a `.md` file in Finder opens it in Marksidian |
 
 ### Milestone 3: Live Preview MVP (Week 3–6)
 
@@ -1353,8 +1353,8 @@ No plugin loading code, API, or manifest format should be built in v0.1.
 | Horizontal rules render | `---` becomes a horizontal line |
 | Readable line width toggles | `View → Readable Line Width` constrains/releases content width |
 | Zoom in/out works | `Cmd+=` / `Cmd+-` adjusts editor font size |
-| App installs via Homebrew | `brew install --cask lume` installs and launches successfully |
-| Clean uninstall | `brew uninstall --cask lume --zap` removes all traces |
+| App installs via Homebrew | `brew install --cask marksidian` installs and launches successfully |
+| Clean uninstall | `brew uninstall --cask marksidian --zap` removes all traces |
 
 ---
 
@@ -1455,7 +1455,7 @@ The **preload script** (`src/main/preload.ts`) exposes a minimal API to the rend
 ```typescript
 import { contextBridge, ipcRenderer } from 'electron';
 
-contextBridge.exposeInMainWorld('lume', {
+contextBridge.exposeInMainWorld('marksidian', {
   // ── Request-response (invoke → Promise) ──
   save: (content: string): Promise<{ path: string }> =>
     ipcRenderer.invoke('file:save', { content }),
@@ -1486,7 +1486,7 @@ contextBridge.exposeInMainWorld('lume', {
 4. **Hot reload:** Renderer changes auto-rebuild. Press `Cmd+R` in the Electron window to reload. Main process changes require `Ctrl+C` and `npm start` again
 5. **Test a specific decoration:** Open a test `.md` file with examples of the target syntax. Verify cursor-in/cursor-out behavior
 6. **Build for distribution:** `npm run build && npm run pack`
-7. **Test the packaged app:** Open `release/mac-universal/Lume.app` from Finder. Verify file association by double-clicking a `.md` file
+7. **Test the packaged app:** Open `release/mac-universal/Marksidian.app` from Finder. Verify file association by double-clicking a `.md` file
 
 ### Appendix E: Open Questions for Implementer
 
@@ -1507,4 +1507,4 @@ Verify license compatibility at project setup with `npx license-checker --summar
 
 ---
 
-*End of specification. This document contains all context needed to build v0.1 of Lume. No prior conversation history is required.*
+*End of specification. This document contains all context needed to build v0.1 of Marksidian. No prior conversation history is required.*
