@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Package (arm64)
+        run: npx electron-builder --mac zip dmg --arm64
+
+      - name: Package (x64)
+        run: npx electron-builder --mac zip dmg --x64
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.zip
+            release/*.dmg
+
+      - name: Update Homebrew cask
+        env:
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF##refs/tags/v}"
+
+          ARM_SHA=$(shasum -a 256 "release/Marksidian-${VERSION}-arm64-mac.zip" | awk '{print $1}')
+          X64_SHA=$(shasum -a 256 "release/Marksidian-${VERSION}-x64-mac.zip" | awk '{print $1}')
+
+          # Generate the cask file (no leading whitespace — heredoc is unindented)
+          cat > /tmp/marksidian.rb << 'CASK_TEMPLATE'
+          cask "marksidian" do
+            arch arm: "arm64", intel: "x64"
+
+            version "VERSION_PLACEHOLDER"
+            sha256 arm:   "ARM_SHA_PLACEHOLDER",
+                   intel: "X64_SHA_PLACEHOLDER"
+
+            url "https://github.com/dciobanu/marksidian/releases/download/v#{version}/Marksidian-#{version}-#{arch}-mac.zip"
+            name "Marksidian"
+            desc "Markdown editor with Obsidian-style live preview"
+            homepage "https://github.com/dciobanu/marksidian"
+
+            depends_on macos: ">= :monterey"
+
+            app "Marksidian.app"
+
+            zap trash: [
+              "~/Library/Application Support/Marksidian",
+              "~/Library/Preferences/com.marksidian.editor.plist",
+              "~/Library/Saved Application State/com.marksidian.editor.savedState",
+            ]
+          end
+          CASK_TEMPLATE
+
+          # Substitute placeholders with actual values
+          sed -i '' "s/VERSION_PLACEHOLDER/${VERSION}/" /tmp/marksidian.rb
+          sed -i '' "s/ARM_SHA_PLACEHOLDER/${ARM_SHA}/" /tmp/marksidian.rb
+          sed -i '' "s/X64_SHA_PLACEHOLDER/${X64_SHA}/" /tmp/marksidian.rb
+
+          # Remove leading whitespace from heredoc (8 spaces)
+          sed -i '' 's/^          //' /tmp/marksidian.rb
+
+          # Push to homebrew-tap via GitHub API
+          CONTENT=$(base64 -i /tmp/marksidian.rb)
+
+          # Get existing file SHA (needed for updates, empty for first push)
+          EXISTING_SHA=$(curl -s \
+            -H "Authorization: token ${HOMEBREW_TAP_GITHUB_TOKEN}" \
+            https://api.github.com/repos/dciobanu/homebrew-tap/contents/Casks/marksidian.rb \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha',''))" 2>/dev/null || echo "")
+
+          # Build JSON payload
+          if [ -n "$EXISTING_SHA" ]; then
+            JSON_BODY=$(python3 -c "
+          import json, sys
+          print(json.dumps({
+            'message': 'Update marksidian to ${VERSION}',
+            'content': '''${CONTENT}''',
+            'sha': '${EXISTING_SHA}',
+            'branch': 'main'
+          }))
+          ")
+          else
+            JSON_BODY=$(python3 -c "
+          import json
+          print(json.dumps({
+            'message': 'Add marksidian ${VERSION}',
+            'content': '''${CONTENT}''',
+            'branch': 'main'
+          }))
+          ")
+          fi
+
+          curl -X PUT \
+            -H "Authorization: token ${HOMEBREW_TAP_GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d "$JSON_BODY" \
+            https://api.github.com/repos/dciobanu/homebrew-tap/contents/Casks/marksidian.rb
