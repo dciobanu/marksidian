@@ -30,6 +30,7 @@ export function createWindow(bounds?: { x: number; y: number; width: number; hei
     minHeight: 300,
     show: false,
     titleBarStyle: 'default',
+    icon: path.join(__dirname, '..', '..', 'resources', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
