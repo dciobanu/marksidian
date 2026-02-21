@@ -13,12 +13,28 @@ A Markdown editor with Obsidian-style Live Preview, built on Electron and CodeMi
 - **Keyboard shortcuts** — `Cmd+B` bold, `Cmd+I` italic, `Cmd+K` link, `Cmd+E` toggle mode, `Cmd+Shift+E` reading mode, and more
 - **System theme** — follows macOS light/dark preference
 
-## Getting Started
+## Install
+
+### Homebrew (macOS)
+
+```bash
+brew install --cask dciobanu/tap/marksidian
+```
+
+### Manual Download
+
+Grab the latest DMG or ZIP from [Releases](https://github.com/dciobanu/marksidian/releases). If macOS says the app "is damaged", remove the quarantine attribute:
+
+```bash
+xattr -cr /Applications/Marksidian.app
+```
+
+## Building from Source
 
 **Prerequisites:** Node.js 22+ and npm.
 
 ```bash
-git clone https://github.com/CodingHaus/marksidian.git
+git clone https://github.com/dciobanu/marksidian.git
 cd marksidian
 npm install
 npm run build
