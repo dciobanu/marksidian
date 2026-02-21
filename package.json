@@ -6,10 +6,11 @@
   "author": "Marksidian Contributors",
   "license": "MIT",
   "scripts": {
-    "dev": "npm run dev:main & npm run dev:renderer",
+    "dev": "node copy-katex.mjs && npm run dev:main & npm run dev:renderer",
     "dev:main": "esbuild src/main/main.ts --bundle --platform=node --target=node22 --outfile=dist/main/main.js --format=cjs --external:electron --sourcemap --watch",
     "dev:renderer": "esbuild src/renderer/renderer.ts --bundle --platform=browser --target=es2022 --outfile=dist/renderer/renderer.js --format=iife --sourcemap --watch",
-    "build": "npm run build:main && npm run build:renderer && npm run copy:preload",
+    "build": "npm run build:main && npm run build:renderer && npm run copy:preload && npm run copy:katex",
+    "copy:katex": "node copy-katex.mjs",
     "build:main": "node esbuild.main.mjs",
     "build:renderer": "node esbuild.renderer.mjs",
     "copy:preload": "cp dist/main/preload.js dist/main/preload.js 2>/dev/null || true",
