@@ -32,6 +32,28 @@ export interface SaveResult {
   path: string;
 }
 
+// ── Theme system ──────────────────────────────────────────────
+
+export interface ThemeRegistryEntry {
+  name: string;
+  author: string;
+  repo: string;
+  screenshot: string;
+  modes: ('dark' | 'light')[];
+  legacy?: boolean;
+}
+
+export interface InstalledTheme {
+  name: string;
+  author: string;
+  version: string;
+  repo: string;
+}
+
+export interface ThemeSettings {
+  activeTheme: string | null;
+}
+
 export interface MarksidianAPI {
   save: (content: string) => Promise<SaveResult>;
   saveAs: (content: string) => Promise<SaveResult>;
@@ -53,6 +75,19 @@ export interface MarksidianAPI {
   onCollectSessionState: (cb: () => void) => void;
   sendSessionState: (state: RendererSessionState) => void;
   onRestoreState: (cb: (data: RendererSessionState) => void) => void;
+
+  // Theme management
+  fetchThemeRegistry: () => Promise<ThemeRegistryEntry[]>;
+  listInstalledThemes: () => Promise<InstalledTheme[]>;
+  installTheme: (repo: string, name: string) => Promise<void>;
+  uninstallTheme: (name: string) => Promise<void>;
+  getThemeSettings: () => Promise<ThemeSettings>;
+  setActiveTheme: (name: string | null) => Promise<void>;
+  getThemeCssPath: (name: string) => Promise<string>;
+  onThemeActiveChanged: (cb: (data: { name: string | null }) => void) => void;
+
+  // Settings
+  onMenuOpenSettings: (cb: () => void) => void;
 }
 
 declare global {

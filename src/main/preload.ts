@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_SEND, IPC_PUSH } from '../shared/ipc-channels';
+import { IPC_INVOKE, IPC_SEND, IPC_PUSH } from '../shared/ipc-channels';
 
 contextBridge.exposeInMainWorld('marksidian', {
   // Request-response (invoke → Promise)
@@ -50,4 +50,26 @@ contextBridge.exposeInMainWorld('marksidian', {
     ipcRenderer.send(IPC_SEND.SESSION_STATE_RESPONSE, state),
   onRestoreState: (cb: (data: import('../shared/types').RendererSessionState) => void) =>
     ipcRenderer.on(IPC_PUSH.SESSION_RESTORE_STATE, (_event, data) => cb(data)),
+
+  // Theme management
+  fetchThemeRegistry: () =>
+    ipcRenderer.invoke(IPC_INVOKE.THEME_FETCH_REGISTRY),
+  listInstalledThemes: () =>
+    ipcRenderer.invoke(IPC_INVOKE.THEME_LIST_INSTALLED),
+  installTheme: (repo: string, name: string) =>
+    ipcRenderer.invoke(IPC_INVOKE.THEME_INSTALL, { repo, name }),
+  uninstallTheme: (name: string) =>
+    ipcRenderer.invoke(IPC_INVOKE.THEME_UNINSTALL, { name }),
+  getThemeSettings: () =>
+    ipcRenderer.invoke(IPC_INVOKE.THEME_GET_SETTINGS),
+  setActiveTheme: (name: string | null) =>
+    ipcRenderer.invoke(IPC_INVOKE.THEME_SET_ACTIVE, { name }),
+  getThemeCssPath: (name: string) =>
+    ipcRenderer.invoke(IPC_INVOKE.THEME_GET_CSS_PATH, { name }),
+  onThemeActiveChanged: (cb: (data: { name: string | null }) => void) =>
+    ipcRenderer.on(IPC_PUSH.THEME_ACTIVE_CHANGED, (_event, data) => cb(data)),
+
+  // Settings
+  onMenuOpenSettings: (cb: () => void) =>
+    ipcRenderer.on('menu:open-settings', () => cb()),
 });

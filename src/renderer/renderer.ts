@@ -19,6 +19,8 @@ import { setFileDir, getFileDir } from './editor/live-preview/image';
 import { showReadingView } from './editor/reading/reading-view';
 import { updateStatusBar } from './ui/status-bar';
 import { setupContainer, toggleReadableLineWidth } from './ui/container';
+import { loadActiveTheme, applyThemeCss, removeThemeCss } from './ui/theme-loader';
+import { openThemeModal } from './ui/theme-modal';
 import type { EditorMode } from '../shared/types';
 
 // Initialize
@@ -256,6 +258,28 @@ if (window.marksidian) {
     applyZoom();
     setCursorOffset(data.cursorOffset);
     setScrollTop(data.scrollTop);
+  });
+
+  // Theme: load active theme on startup
+  loadActiveTheme();
+
+  // Theme: respond to active theme changes from other windows
+  window.marksidian.onThemeActiveChanged(async (data) => {
+    if (data.name) {
+      try {
+        const cssPath = await window.marksidian.getThemeCssPath(data.name);
+        applyThemeCss(cssPath);
+      } catch {
+        removeThemeCss();
+      }
+    } else {
+      removeThemeCss();
+    }
+  });
+
+  // Settings: open settings modal
+  window.marksidian.onMenuOpenSettings(() => {
+    openThemeModal();
   });
 }
 

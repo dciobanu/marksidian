@@ -3,6 +3,16 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { writeFile } from './file-manager';
 import {
+  ensureThemesDir,
+  fetchThemeRegistry,
+  listInstalledThemes,
+  installTheme,
+  uninstallTheme,
+  getThemeSettings,
+  saveThemeSettings,
+  getThemeCssPath,
+} from './theme-manager';
+import {
   createWindow,
   openFileInWindow,
   openFileInNewWindow,
@@ -55,13 +65,23 @@ app.on('before-quit', async (event) => {
 });
 
 app.whenReady().then(async () => {
-  // Handle marksidian-asset:// protocol for local image loading
+  // Handle marksidian-asset:// protocol for local image loading.
+  // Because the scheme is registered as `standard`, the URL parser treats the
+  // first path segment after :// as a hostname (e.g. marksidian-asset:///Users/…
+  // → host="users", pathname="/dorin/…").  Reconstruct the full filesystem path
+  // by combining host + pathname.
   protocol.handle('marksidian-asset', (request) => {
-    const filePath = decodeURIComponent(new URL(request.url).pathname);
+    const url = new URL(request.url);
+    const host = decodeURIComponent(url.host);
+    const pathname = decodeURIComponent(url.pathname);
+    const filePath = host ? `/${host}${pathname}` : pathname;
     return net.fetch(`file://${filePath}`);
   });
 
   buildMenu();
+
+  // Ensure theme storage directory exists
+  await ensureThemesDir();
 
   // Restore previous session, or open a blank window
   if (!openedViaFile) {
@@ -226,4 +246,38 @@ ipcMain.on('editor:context-menu', (event) => {
     { role: 'selectAll' },
   ]);
   menu.popup({ window: win });
+});
+
+// ── Theme management ────────────────────────────────────────
+
+ipcMain.handle(IPC_INVOKE.THEME_FETCH_REGISTRY, async () => {
+  return fetchThemeRegistry();
+});
+
+ipcMain.handle(IPC_INVOKE.THEME_LIST_INSTALLED, async () => {
+  return listInstalledThemes();
+});
+
+ipcMain.handle(IPC_INVOKE.THEME_INSTALL, async (_event, { repo, name }: { repo: string; name: string }) => {
+  await installTheme(repo, name);
+});
+
+ipcMain.handle(IPC_INVOKE.THEME_UNINSTALL, async (_event, { name }: { name: string }) => {
+  await uninstallTheme(name);
+});
+
+ipcMain.handle(IPC_INVOKE.THEME_GET_SETTINGS, async () => {
+  return getThemeSettings();
+});
+
+ipcMain.handle(IPC_INVOKE.THEME_SET_ACTIVE, async (_event, { name }: { name: string | null }) => {
+  await saveThemeSettings({ activeTheme: name });
+  // Broadcast to all windows so they all update
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send(IPC_PUSH.THEME_ACTIVE_CHANGED, { name });
+  }
+});
+
+ipcMain.handle(IPC_INVOKE.THEME_GET_CSS_PATH, async (_event, { name }: { name: string }) => {
+  return getThemeCssPath(name);
 });
