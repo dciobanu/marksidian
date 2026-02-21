@@ -13,6 +13,7 @@ files:
   - "!node_modules"
 
 mac:
+  artifactName: "${productName}-${version}-${arch}-mac.${ext}"
   target:
     - target: dmg
       arch: [x64, arm64]
