@@ -1,6 +1,27 @@
 export type EditorMode = 'live' | 'source' | 'reading';
 export type ThemeMode = 'light' | 'dark' | 'system';
 
+// ── Session persistence ────────────────────────────────────────
+
+/** State the renderer owns and reports to main on quit. */
+export interface RendererSessionState {
+  cursorOffset: number;
+  scrollTop: number;
+  editorMode: EditorMode;
+  zoomLevel: number;
+}
+
+/** Full per-window state persisted in session.json. */
+export interface WindowSessionState extends RendererSessionState {
+  filePath: string | null;
+  windowBounds: { x: number; y: number; width: number; height: number };
+}
+
+export interface SessionData {
+  version: 1;
+  windows: WindowSessionState[];
+}
+
 export interface FileOpenedPayload {
   path: string;
   content: string;
@@ -27,6 +48,11 @@ export interface LumeAPI {
   onMenuToggleLineWidth: (cb: (data: { enabled: boolean }) => void) => void;
   onMenuZoom: (cb: (data: { direction: string }) => void) => void;
   getFilePath: () => Promise<string | null>;
+
+  // Session persistence
+  onCollectSessionState: (cb: () => void) => void;
+  sendSessionState: (state: RendererSessionState) => void;
+  onRestoreState: (cb: (data: RendererSessionState) => void) => void;
 }
 
 declare global {

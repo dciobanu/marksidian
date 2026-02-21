@@ -1,14 +1,17 @@
 import { app, ipcMain, BrowserWindow, dialog, protocol, net, shell, Menu } from 'electron';
+import * as fs from 'fs';
 import * as path from 'path';
 import { writeFile } from './file-manager';
 import {
   createWindow,
+  openFileInWindow,
   openFileInNewWindow,
   getFilePathForWindow,
   setFilePathForWindow,
 } from './window-manager';
 import { buildMenu } from './menu';
-import { IPC_INVOKE, IPC_SEND } from '../shared/ipc-channels';
+import { IPC_INVOKE, IPC_SEND, IPC_PUSH } from '../shared/ipc-channels';
+import { loadSession, saveSession, collectSessionState } from './session-manager';
 
 // Register custom protocol for loading local assets (images)
 protocol.registerSchemesAsPrivileged([
@@ -23,7 +26,32 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-app.whenReady().then(() => {
+// Track whether the app was opened via double-clicking a .md file
+let openedViaFile = false;
+
+// Session save-on-quit
+let isCollectingSession = false;
+
+app.on('before-quit', async (event) => {
+  if (isCollectingSession) return; // re-entrant call after save — let it quit
+
+  event.preventDefault();
+  isCollectingSession = true;
+
+  try {
+    const session = await collectSessionState();
+    saveSession(session);
+  } catch {
+    // Don't block quit if session save fails
+  }
+
+  // 5s safety timeout in case quit was cancelled (e.g. unsaved-changes dialog)
+  setTimeout(() => { isCollectingSession = false; }, 5000);
+
+  app.quit();
+});
+
+app.whenReady().then(async () => {
   // Handle lume-asset:// protocol for local image loading
   protocol.handle('lume-asset', (request) => {
     const filePath = decodeURIComponent(new URL(request.url).pathname);
@@ -31,7 +59,21 @@ app.whenReady().then(() => {
   });
 
   buildMenu();
-  createWindow();
+
+  // Restore previous session, or open a blank window
+  if (!openedViaFile) {
+    const session = loadSession();
+    if (session && session.windows.length > 0) {
+      await restoreSession(session);
+    } else {
+      createWindow();
+    }
+  } else {
+    // open-file handler already created windows; nothing to do
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -39,6 +81,55 @@ app.whenReady().then(() => {
     }
   });
 });
+
+async function restoreSession(session: import('../shared/types').SessionData): Promise<void> {
+  let restoredCount = 0;
+
+  for (const ws of session.windows) {
+    // If the window had a file, check it still exists
+    if (ws.filePath) {
+      try {
+        await fs.promises.access(ws.filePath, fs.constants.R_OK);
+      } catch {
+        continue; // File was deleted — skip this window
+      }
+    }
+
+    const win = createWindow(ws.windowBounds);
+    restoredCount++;
+
+    if (ws.filePath) {
+      win.webContents.once('did-finish-load', () => {
+        openFileInWindow(win, ws.filePath!).then(() => {
+          // Give the renderer a moment to process file:opened, then send restore
+          setTimeout(() => {
+            win.webContents.send(IPC_PUSH.SESSION_RESTORE_STATE, {
+              cursorOffset: ws.cursorOffset,
+              scrollTop: ws.scrollTop,
+              editorMode: ws.editorMode,
+              zoomLevel: ws.zoomLevel,
+            });
+          }, 100);
+        });
+      });
+    } else {
+      // Untitled window — just restore editor state (mode, zoom)
+      win.webContents.once('did-finish-load', () => {
+        win.webContents.send(IPC_PUSH.SESSION_RESTORE_STATE, {
+          cursorOffset: ws.cursorOffset,
+          scrollTop: ws.scrollTop,
+          editorMode: ws.editorMode,
+          zoomLevel: ws.zoomLevel,
+        });
+      });
+    }
+  }
+
+  // If all session windows were skipped (e.g. all files deleted), open a blank window
+  if (restoredCount === 0) {
+    createWindow();
+  }
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -49,6 +140,7 @@ app.on('window-all-closed', () => {
 // Handle file open from Finder (double-click .md)
 app.on('open-file', (event, filePath) => {
   event.preventDefault();
+  openedViaFile = true;
   if (app.isReady()) {
     openFileInNewWindow(filePath);
   } else {

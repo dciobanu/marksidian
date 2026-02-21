@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { IPC_SEND, IPC_PUSH } from '../shared/ipc-channels';
 
 contextBridge.exposeInMainWorld('lume', {
   // Request-response (invoke → Promise)
@@ -41,4 +42,12 @@ contextBridge.exposeInMainWorld('lume', {
 
   getFilePath: () =>
     ipcRenderer.invoke('file:get-path'),
+
+  // Session persistence
+  onCollectSessionState: (cb: () => void) =>
+    ipcRenderer.on(IPC_PUSH.SESSION_COLLECT_STATE, () => cb()),
+  sendSessionState: (state: import('../shared/types').RendererSessionState) =>
+    ipcRenderer.send(IPC_SEND.SESSION_STATE_RESPONSE, state),
+  onRestoreState: (cb: (data: import('../shared/types').RendererSessionState) => void) =>
+    ipcRenderer.on(IPC_PUSH.SESSION_RESTORE_STATE, (_event, data) => cb(data)),
 });

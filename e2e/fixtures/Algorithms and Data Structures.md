@@ -11,22 +11,31 @@ Number of combinations of r elements from a set with n elements (n choose r wher
 $$_nC_r = \frac {n!}{r!(n-r)!}$$
 
 ## Disjoint Set
+
 A set of sets that do not intersect:
+
 **Implementation:** 
 	Parent nodes array for identifying subsets
 	Rank array for subsets
+    
 **Methods:** 
 	`Add(value)` `Find(value)` `Union(value1, value2)`
+
 **Complexity:** 
 	Time: O(α(N))
 	Space: O(N)
+    
 **Used in:**
 	Tracking indirect connections in graphs
 
 ## Heap
+
 Optimized for in-priority retrieval of added elements (aka Priority Queue)
+
 **Implementation:**
+
 	Dynamic array with an almost complete binary tree (other tree types possible) in it
+
 **Methods:**
 	`Add(value)` - add an element at the tail end of the array, then go toward the root swapping elements as needed
 	`Pop()` - return the root of the tree, move tail to the root, start with the root and keep swapping values with left branches until the tree is in the right order again.

@@ -101,3 +101,34 @@ export function getWordCount(): number {
   const words = text.match(/\S+/g);
   return words ? words.length : 0;
 }
+
+// ── Session persistence helpers ────────────────────────────────
+
+export function getCursorOffset(): number {
+  if (!editorView) return 0;
+  return editorView.state.selection.main.head;
+}
+
+export function getScrollTop(): number {
+  if (!editorView) return 0;
+  return editorView.scrollDOM.scrollTop;
+}
+
+export function setCursorOffset(offset: number): void {
+  if (!editorView) return;
+  const clamped = Math.max(0, Math.min(offset, editorView.state.doc.length));
+  editorView.dispatch({
+    selection: { anchor: clamped },
+    scrollIntoView: true,
+  });
+}
+
+export function setScrollTop(scrollTop: number): void {
+  if (!editorView) return;
+  // requestAnimationFrame ensures the DOM has laid out after content change
+  requestAnimationFrame(() => {
+    if (editorView) {
+      editorView.scrollDOM.scrollTop = scrollTop;
+    }
+  });
+}

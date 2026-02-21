@@ -10,6 +10,10 @@ import {
   setUpdateListener,
   getCursorPosition,
   getWordCount,
+  getCursorOffset,
+  getScrollTop,
+  setCursorOffset,
+  setScrollTop,
 } from './editor/editor';
 import { setFileDir } from './editor/live-preview/image';
 import { showReadingView } from './editor/reading/reading-view';
@@ -49,6 +53,10 @@ createEditor(editorContainer);
   getMode,
   getCursorPosition,
   getWordCount,
+  getCursorOffset,
+  getScrollTop,
+  setCursorOffset,
+  setScrollTop,
 };
 
 // Track zoom level
@@ -217,6 +225,25 @@ if (window.lume) {
       document.body.classList.add('theme-light');
       document.body.classList.remove('theme-dark');
     }
+  });
+
+  // Session: collect state on quit
+  window.lume.onCollectSessionState(() => {
+    window.lume.sendSessionState({
+      cursorOffset: getCursorOffset(),
+      scrollTop: getScrollTop(),
+      editorMode: getMode(),
+      zoomLevel,
+    });
+  });
+
+  // Session: restore state on launch
+  window.lume.onRestoreState((data) => {
+    switchToMode(data.editorMode);
+    zoomLevel = data.zoomLevel;
+    applyZoom();
+    setCursorOffset(data.cursorOffset);
+    setScrollTop(data.scrollTop);
   });
 }
 

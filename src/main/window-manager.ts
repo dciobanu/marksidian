@@ -21,10 +21,11 @@ export function setFilePathForWindow(win: BrowserWindow, filePath: string | null
   }
 }
 
-export function createWindow(): BrowserWindow {
+export function createWindow(bounds?: { x: number; y: number; width: number; height: number }): BrowserWindow {
   const win = new BrowserWindow({
-    width: 900,
-    height: 700,
+    width: bounds?.width ?? 900,
+    height: bounds?.height ?? 700,
+    ...(bounds ? { x: bounds.x, y: bounds.y } : {}),
     minWidth: 400,
     minHeight: 300,
     show: false,
