@@ -9,6 +9,10 @@ export function setFileDir(dir: string) {
   currentFileDir = dir;
 }
 
+export function getFileDir(): string {
+  return currentFileDir;
+}
+
 class ImageWidget extends WidgetType {
   constructor(
     readonly src: string,

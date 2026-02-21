@@ -61,11 +61,11 @@ An email autolink: <user@example.com>
 
 ## Images
 
-![Alt text for image](https://via.placeholder.com/150)
+![Alt text for image](https://placehold.co/150)
 
-![Image with title](https://via.placeholder.com/300x200 "Placeholder Image")
+![Image with title](https://placehold.co/300x200 "Placeholder Image")
 
-![](https://via.placeholder.com/50)
+![](https://placehold.co/50)
 
 ## Blockquotes
 

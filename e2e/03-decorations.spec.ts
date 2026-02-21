@@ -321,7 +321,7 @@ test.describe('Links', () => {
 
 test.describe('Images', () => {
   test('image widget renders when cursor is away', async () => {
-    await setDoc(page, '![alt](https://via.placeholder.com/50)\n\nParagraph');
+    await setDoc(page, '![alt](https://placehold.co/50)\n\nParagraph');
     await setCursor(page, await page.evaluate(() =>
       (window as any).__marksidian.getEditorContent().indexOf('Paragraph')
     ));

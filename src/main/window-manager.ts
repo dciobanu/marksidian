@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { BrowserWindow, dialog } from 'electron';
+import { BrowserWindow, dialog, shell } from 'electron';
 import { readFile, addRecentFile } from './file-manager';
 import { IPC_PUSH } from '../shared/ipc-channels';
 
@@ -43,6 +43,14 @@ export function createWindow(bounds?: { x: number; y: number; width: number; hei
 
   // __dirname is dist/main at runtime; index.html is at src/renderer/
   win.loadFile(path.join(__dirname, '..', '..', 'src', 'renderer', 'index.html'));
+
+  // Prevent navigation away from the editor — open external URLs in system browser
+  win.webContents.on('will-navigate', (event, url) => {
+    if (!url.startsWith('file://')) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
 
   win.once('ready-to-show', () => {
     win.show();

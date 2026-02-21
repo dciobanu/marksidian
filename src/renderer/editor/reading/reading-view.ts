@@ -95,7 +95,7 @@ export function renderMarkdown(content: string): string {
   return md.render(content);
 }
 
-export async function showReadingView(container: HTMLElement, content: string): Promise<void> {
+export async function showReadingView(container: HTMLElement, content: string, fileDir?: string): Promise<void> {
   // Reinitialize mermaid with current theme each time
   mermaid.initialize({
     startOnLoad: false,
@@ -120,6 +120,22 @@ export async function showReadingView(container: HTMLElement, content: string): 
       // On error, keep the raw source visible as fallback
       el.classList.add('mermaid-error');
       console.warn('Mermaid rendering failed:', err);
+    }
+  }
+
+  // Post-process images: resolve local paths via marksidian-asset:// protocol
+  if (fileDir) {
+    const images = container.querySelectorAll<HTMLImageElement>('img');
+    for (const img of images) {
+      const src = img.getAttribute('src');
+      if (!src) continue;
+      if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:') || src.startsWith('marksidian-asset:')) continue;
+      // Local path — resolve relative to file dir, same as live preview (image.ts)
+      let resolved = src;
+      if (!resolved.startsWith('/')) {
+        resolved = fileDir + '/' + resolved;
+      }
+      img.src = 'marksidian-asset://' + resolved;
     }
   }
 }

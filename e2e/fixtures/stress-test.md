@@ -100,9 +100,9 @@ This is ==unclosed highlight
 
 ## Images Inline with Text
 
-Before ![tiny](https://via.placeholder.com/20) after image in paragraph.
+Before ![tiny](https://placehold.co/20) after image in paragraph.
 
-![img1](https://via.placeholder.com/50)![img2](https://via.placeholder.com/50)
+![img1](https://placehold.co/50)![img2](https://placehold.co/50)
 
 ## Lists with Complex Content
 

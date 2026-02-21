@@ -15,7 +15,7 @@ import {
   setCursorOffset,
   setScrollTop,
 } from './editor/editor';
-import { setFileDir } from './editor/live-preview/image';
+import { setFileDir, getFileDir } from './editor/live-preview/image';
 import { showReadingView } from './editor/reading/reading-view';
 import { updateStatusBar } from './ui/status-bar';
 import { setupContainer, toggleReadableLineWidth } from './ui/container';
@@ -28,6 +28,18 @@ const readingContent = document.getElementById('reading-content')!;
 
 // Setup container
 setupContainer();
+
+// Intercept link clicks in reading view — open external URLs in system browser
+readingContent.addEventListener('click', (e) => {
+  const anchor = (e.target as HTMLElement).closest('a');
+  if (!anchor) return;
+  const href = anchor.getAttribute('href');
+  if (!href) return;
+  e.preventDefault();
+  if ((href.startsWith('http://') || href.startsWith('https://')) && window.marksidian) {
+    window.marksidian.openExternal(href);
+  }
+});
 
 // Apply theme based on system preference
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
@@ -97,7 +109,7 @@ async function switchToMode(mode: EditorMode): Promise<void> {
   if (mode === 'reading') {
     editorContainer.style.display = 'none';
     readingContainer.style.display = '';
-    await showReadingView(readingContent, getEditorContent());
+    await showReadingView(readingContent, getEditorContent(), getFileDir());
     setMode(mode);
   } else {
     readingContainer.style.display = 'none';

@@ -588,6 +588,173 @@ test.describe('Mermaid diagram rendering', () => {
   });
 });
 
+// ─── Reading view rendering (CommonMark full) ───────────────
+
+test.describe('Reading view rendering (CommonMark full)', () => {
+  let fixtureContent: string;
+
+  test.beforeAll(async () => {
+    fixtureContent = loadFixtureRaw('commonmark-full.md');
+    await showReading(page, fixtureContent);
+  });
+
+  test.afterAll(async () => {
+    await showLive(page);
+  });
+
+  test('images render with correct attributes', async () => {
+    const images = rv(page, 'img');
+    const count = await images.count();
+    expect(count).toBe(3);
+
+    // First image has alt text
+    await expect(images.nth(0)).toHaveAttribute('alt', 'Alt text for image');
+    await expect(images.nth(0)).toHaveAttribute('src', 'https://placehold.co/150');
+
+    // Second image has alt text and title
+    await expect(images.nth(1)).toHaveAttribute('alt', 'Image with title');
+    await expect(images.nth(1)).toHaveAttribute('title', 'Placeholder Image');
+
+    // Third image has empty alt
+    await expect(images.nth(2)).toHaveAttribute('alt', '');
+  });
+
+  test('links render as <a> elements with href', async () => {
+    const links = rv(page, 'a[href="https://example.com"]');
+    expect(await links.count()).toBeGreaterThanOrEqual(1);
+    await expect(links.first()).toBeVisible();
+  });
+
+  test('autolinks render', async () => {
+    const autolink = rv(page, 'a[href="https://www.example.com"]');
+    expect(await autolink.count()).toBeGreaterThanOrEqual(1);
+  });
+
+  test('nested blockquotes render', async () => {
+    const blockquotes = rv(page, 'blockquote');
+    expect(await blockquotes.count()).toBeGreaterThanOrEqual(3);
+
+    // Nested blockquote: a blockquote inside a blockquote
+    const nested = rv(page, 'blockquote > blockquote');
+    expect(await nested.count()).toBeGreaterThanOrEqual(1);
+  });
+
+  test('unordered and ordered lists render', async () => {
+    const ulLists = rv(page, 'ul');
+    expect(await ulLists.count()).toBeGreaterThanOrEqual(3);
+
+    const olLists = rv(page, 'ol');
+    expect(await olLists.count()).toBeGreaterThanOrEqual(2);
+  });
+
+  test('task checkboxes render', async () => {
+    const checkboxes = rv(page, 'input[type="checkbox"]');
+    expect(await checkboxes.count()).toBeGreaterThanOrEqual(4);
+
+    // At least 2 should be checked
+    const checked = rv(page, 'input[type="checkbox"][checked]');
+    expect(await checked.count()).toBeGreaterThanOrEqual(2);
+  });
+
+  test('tables render with alignment', async () => {
+    const tables = rv(page, 'table');
+    expect(await tables.count()).toBeGreaterThanOrEqual(2);
+
+    // Alignment table has th elements
+    const ths = rv(page, 'table th');
+    expect(await ths.count()).toBeGreaterThanOrEqual(3);
+  });
+
+  test('code blocks with language render', async () => {
+    const codeBlocks = rv(page, 'pre code');
+    expect(await codeBlocks.count()).toBeGreaterThanOrEqual(5);
+  });
+
+  test('horizontal rules render', async () => {
+    const hrs = rv(page, 'hr');
+    expect(await hrs.count()).toBeGreaterThanOrEqual(3);
+  });
+
+  test('strikethrough renders', async () => {
+    // markdown-it renders ~~text~~ as <s> (not <del>)
+    const s = rv(page, 's');
+    expect(await s.count()).toBeGreaterThanOrEqual(1);
+  });
+
+  test('frontmatter is stripped from output', async () => {
+    const text = await page.evaluate(() =>
+      document.getElementById('reading-content')!.textContent || ''
+    );
+    expect(text).not.toContain('title: CommonMark Full Spec Coverage');
+    expect(text).not.toContain('author: Test Suite');
+  });
+
+  test('no raw markdown syntax visible', async () => {
+    const text = await page.evaluate(() =>
+      document.getElementById('reading-content')!.textContent || ''
+    );
+    // Should not see raw fenced code markers or bold markers
+    expect(text).not.toContain('```');
+    expect(text).not.toContain('**bold with asterisks**');
+  });
+});
+
+// ─── Reading view link handling ─────────────────────────────
+
+test.describe('Reading view link handling', () => {
+  test('clicking external link does not navigate Electron window', async () => {
+    await showReading(page, '[Go to Example](https://www.ciobanu.org/)');
+
+    // Click the link
+    const link = rv(page, 'a[href="https://www.ciobanu.org/"]');
+    await link.click();
+
+    // Wait a moment to ensure no navigation happened
+    await page.waitForTimeout(300);
+
+    // The reading view should still be visible (not navigated away)
+    const readingContainer = page.locator('#reading-container');
+    await expect(readingContainer).toBeVisible();
+
+    // The editor content should still be accessible
+    const hasTestApi = await page.evaluate(() => !!(window as any).__marksidian);
+    expect(hasTestApi).toBe(true);
+
+    await showLive(page);
+  });
+
+  test('clicking link with href keeps app functional', async () => {
+    // Render content with multiple link types
+    await showReading(page, [
+      '[External](https://www.ciobanu.org/)',
+      '',
+      '[Anchor](#section)',
+    ].join('\n'));
+
+    // Click the external link
+    const extLink = rv(page, 'a[href="https://www.ciobanu.org/"]');
+    await extLink.click();
+    await page.waitForTimeout(300);
+
+    // App should still be functional — test API accessible, reading view visible
+    const readingVisible = await page.evaluate(() =>
+      document.getElementById('reading-container')!.style.display !== 'none'
+    );
+    expect(readingVisible).toBe(true);
+
+    // Click the anchor link
+    const anchorLink = rv(page, 'a[href="#section"]');
+    await anchorLink.click();
+    await page.waitForTimeout(200);
+
+    // Still functional
+    const hasTestApi = await page.evaluate(() => !!(window as any).__marksidian);
+    expect(hasTestApi).toBe(true);
+
+    await showLive(page);
+  });
+});
+
 // ─── Mode switching preserves content ────────────────────────
 
 test.describe('Mode switching round-trips', () => {
