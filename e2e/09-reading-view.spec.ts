@@ -353,19 +353,55 @@ test.describe('Reading view special features', () => {
     await showLive(page);
   });
 
-  test('frontmatter is stripped from reading view', async () => {
+  test('frontmatter renders as collapsible Properties section', async () => {
     await showReading(page, '---\ntitle: Test\ndate: 2026-01-01\n---\n\n# Hello World');
 
-    const text = await page.evaluate(() => {
-      return document.getElementById('reading-content')!.textContent || '';
-    });
+    // Properties toggle should be visible
+    const toggle = rv(page, '.reading-frontmatter-toggle');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveText(/Properties/);
 
-    // Frontmatter should NOT appear
-    expect(text).not.toContain('title: Test');
-    expect(text).not.toContain('date: 2026-01-01');
-    expect(text).not.toContain('---');
-    // Content should appear
-    expect(text).toContain('Hello World');
+    // Properties should be collapsed by default
+    const props = rv(page, '.reading-frontmatter-properties');
+    await expect(props).toBeHidden();
+
+    // Raw frontmatter syntax should NOT appear in body text
+    const bodyText = await page.evaluate(() => {
+      const body = document.querySelector('.markdown-preview-view');
+      // Get text excluding the frontmatter section
+      const clone = body!.cloneNode(true) as HTMLElement;
+      const fm = clone.querySelector('.reading-frontmatter');
+      if (fm) fm.remove();
+      return clone.textContent || '';
+    });
+    expect(bodyText).not.toContain('---');
+    expect(bodyText).toContain('Hello World');
+
+    await showLive(page);
+  });
+
+  test('frontmatter toggle expands and collapses in reading view', async () => {
+    await showReading(page, '---\ntitle: Test\ndate: 2026-01-01\n---\n\n# Hello World');
+
+    const toggle = rv(page, '.reading-frontmatter-toggle');
+
+    // Click to expand
+    await toggle.click();
+    const props = rv(page, '.reading-frontmatter-properties');
+    await expect(props).toBeVisible();
+
+    // Check keys are visible
+    const keys = await page.evaluate(() => {
+      const els = document.querySelectorAll('.reading-frontmatter-key');
+      return Array.from(els).map(el => el.textContent);
+    });
+    expect(keys).toContain('title');
+    expect(keys).toContain('date');
+
+    // Click to collapse
+    await toggle.click();
+    await expect(props).toBeHidden();
+
     await showLive(page);
   });
 
@@ -681,12 +717,21 @@ test.describe('Reading view rendering (CommonMark full)', () => {
     expect(await s.count()).toBeGreaterThanOrEqual(1);
   });
 
-  test('frontmatter is stripped from output', async () => {
-    const text = await page.evaluate(() =>
-      document.getElementById('reading-content')!.textContent || ''
-    );
-    expect(text).not.toContain('title: CommonMark Full Spec Coverage');
-    expect(text).not.toContain('author: Test Suite');
+  test('frontmatter renders as Properties section', async () => {
+    // Properties toggle should exist
+    const toggle = rv(page, '.reading-frontmatter-toggle');
+    await expect(toggle).toBeVisible();
+
+    // Raw frontmatter should NOT appear in body text
+    const bodyText = await page.evaluate(() => {
+      const body = document.querySelector('.markdown-preview-view');
+      const clone = body!.cloneNode(true) as HTMLElement;
+      const fm = clone.querySelector('.reading-frontmatter');
+      if (fm) fm.remove();
+      return clone.textContent || '';
+    });
+    expect(bodyText).not.toContain('title: CommonMark Full Spec Coverage');
+    expect(bodyText).not.toContain('author: Test Suite');
   });
 
   test('no raw markdown syntax visible', async () => {

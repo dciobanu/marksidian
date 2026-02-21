@@ -561,6 +561,94 @@ test.describe('Frontmatter', () => {
       return await editorHas(page, '.cm-lp-frontmatter-toggle');
     }, { timeout: 3000 }).toBe(true);
   });
+
+  test('hidden frontmatter lines have zero height', async () => {
+    await setDoc(page, '---\ntitle: Test\ndate: 2026-01-01\ntags: [a, b]\n---\n\n# Heading');
+    await setCursor(page, await page.evaluate(() =>
+      (window as any).__marksidian.getEditorContent().indexOf('Heading')
+    ));
+    await expect.poll(async () => {
+      return await editorHas(page, '.cm-lp-frontmatter-hidden-line');
+    }, { timeout: 3000 }).toBe(true);
+
+    const totalHeight = await page.evaluate(() => {
+      const hidden = document.querySelectorAll('.cm-lp-frontmatter-hidden-line');
+      let h = 0;
+      for (const el of hidden) h += (el as HTMLElement).offsetHeight;
+      return h;
+    });
+    expect(totalHeight).toBe(0);
+  });
+
+  test('clicking toggle expands properties', async () => {
+    await setDoc(page, '---\ntitle: Test\ndate: 2026-01-01\n---\n\n# Heading');
+    await setCursor(page, await page.evaluate(() =>
+      (window as any).__marksidian.getEditorContent().indexOf('Heading')
+    ));
+    await expect.poll(async () => {
+      return await editorHas(page, '.cm-lp-frontmatter-toggle');
+    }, { timeout: 3000 }).toBe(true);
+
+    // Click the toggle to expand — dispatch mousedown directly to avoid race with widget rebuild
+    await page.evaluate(() => {
+      const toggle = document.querySelector('.cm-lp-frontmatter-toggle')!;
+      toggle.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    await expect.poll(async () => {
+      return await editorHas(page, '.cm-lp-frontmatter-properties');
+    }, { timeout: 5000 }).toBe(true);
+
+    // Check that keys are visible
+    const keys = await page.evaluate(() => {
+      const els = document.querySelectorAll('.cm-lp-frontmatter-key');
+      return Array.from(els).map(el => el.textContent);
+    });
+    expect(keys).toContain('title');
+    expect(keys).toContain('date');
+
+    // Toggle text should show downward arrow
+    const toggleText = await page.evaluate(() =>
+      document.querySelector('.cm-lp-frontmatter-toggle')?.textContent || ''
+    );
+    expect(toggleText).toContain('\u25BC');
+  });
+
+  test('clicking toggle again collapses properties', async () => {
+    await setDoc(page, '---\ntitle: Test\ndate: 2026-01-01\n---\n\n# Heading');
+    await setCursor(page, await page.evaluate(() =>
+      (window as any).__marksidian.getEditorContent().indexOf('Heading')
+    ));
+    await expect.poll(async () => {
+      return await editorHas(page, '.cm-lp-frontmatter-toggle');
+    }, { timeout: 3000 }).toBe(true);
+
+    // Wait for CM6 to settle after async Lezer parse
+    await page.waitForTimeout(200);
+
+    // Expand
+    await page.evaluate(() => {
+      const toggle = document.querySelector('.cm-lp-frontmatter-toggle')!;
+      toggle.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    await expect.poll(async () => {
+      return await editorHas(page, '.cm-lp-frontmatter-properties');
+    }, { timeout: 5000 }).toBe(true);
+
+    // Collapse
+    await page.evaluate(() => {
+      const toggle = document.querySelector('.cm-lp-frontmatter-toggle')!;
+      toggle.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    await expect.poll(async () => {
+      return !(await editorHas(page, '.cm-lp-frontmatter-properties'));
+    }, { timeout: 5000 }).toBe(true);
+
+    // Toggle text should show right arrow
+    const toggleText = await page.evaluate(() =>
+      document.querySelector('.cm-lp-frontmatter-toggle')?.textContent || ''
+    );
+    expect(toggleText).toContain('\u25B6');
+  });
 });
 
 // ── Footnotes ───────────────────────────────────────────────────

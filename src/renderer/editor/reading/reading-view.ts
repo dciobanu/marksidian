@@ -17,9 +17,10 @@ md.use(markdownItMark);
 // Footnote support [^1] and [^1]: definition
 md.use(markdownItFootnote);
 
-// Frontmatter — strip YAML front matter so it doesn't appear in reading view
-md.use(markdownItFrontMatter, () => {
-  // Callback receives the frontmatter string; we ignore it (just strip it)
+// Frontmatter — capture YAML front matter for structured display
+let capturedFrontmatter = '';
+md.use(markdownItFrontMatter, (fm: string) => {
+  capturedFrontmatter = fm;
 });
 
 // Math support — $inline$ and $$block$$ via KaTeX
@@ -91,7 +92,34 @@ function getMermaidTheme(): string {
   return document.body.classList.contains('theme-dark') ? 'dark' : 'default';
 }
 
+function escapeHTML(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function buildFrontmatterHTML(yaml: string): string {
+  const lines = yaml.split('\n').filter(l => l.trim());
+  if (lines.length === 0) return '';
+
+  let propsHTML = '';
+  for (const line of lines) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) continue;
+    const key = line.slice(0, colonIdx).trim();
+    const value = line.slice(colonIdx + 1).trim();
+    propsHTML += `<div class="reading-frontmatter-property">` +
+      `<span class="reading-frontmatter-key">${escapeHTML(key)}</span>` +
+      `<span class="reading-frontmatter-value">${escapeHTML(value)}</span>` +
+      `</div>`;
+  }
+
+  return `<div class="reading-frontmatter">` +
+    `<div class="reading-frontmatter-toggle">\u25B6 Properties</div>` +
+    `<div class="reading-frontmatter-properties" style="display: none;">${propsHTML}</div>` +
+    `</div>`;
+}
+
 export function renderMarkdown(content: string): string {
+  capturedFrontmatter = '';
   return md.render(content);
 }
 
@@ -103,7 +131,21 @@ export async function showReadingView(container: HTMLElement, content: string, f
     theme: getMermaidTheme(),
   });
 
-  container.innerHTML = renderMarkdown(content);
+  const rendered = renderMarkdown(content);
+  const fmHTML = capturedFrontmatter ? buildFrontmatterHTML(capturedFrontmatter) : '';
+  container.innerHTML = fmHTML + rendered;
+
+  // Wire up frontmatter toggle
+  const fmToggle = container.querySelector('.reading-frontmatter-toggle');
+  if (fmToggle) {
+    fmToggle.addEventListener('click', () => {
+      const props = container.querySelector('.reading-frontmatter-properties') as HTMLElement;
+      if (!props) return;
+      const isHidden = props.style.display === 'none';
+      props.style.display = isHidden ? '' : 'none';
+      fmToggle.textContent = (isHidden ? '\u25BC' : '\u25B6') + ' Properties';
+    });
+  }
 
   // Post-process mermaid diagrams
   const diagrams = container.querySelectorAll<HTMLElement>('.mermaid-diagram');

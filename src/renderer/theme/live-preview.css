@@ -185,6 +185,40 @@
   color: var(--text-normal);
 }
 
+.cm-lp-frontmatter-hidden-line {
+  display: none !important;
+}
+
+.cm-lp-frontmatter-properties {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--divider-color);
+}
+
+.cm-lp-frontmatter-property {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 0.85em;
+  font-family: var(--font-interface-theme);
+}
+
+.cm-lp-frontmatter-key {
+  color: var(--text-accent);
+  font-weight: 600;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.cm-lp-frontmatter-key::after {
+  content: ':';
+}
+
+.cm-lp-frontmatter-value {
+  color: var(--text-normal);
+}
+
 /* Table — Typora-style rendered widget */
 .cm-lp-table-hidden-line {
   display: none !important;

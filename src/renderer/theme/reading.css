@@ -184,6 +184,59 @@
   color: var(--text-accent);
 }
 
+/* ---- Frontmatter properties ---- */
+.markdown-preview-view .reading-frontmatter {
+  background-color: var(--code-background);
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin-bottom: 1em;
+}
+
+.markdown-preview-view .reading-frontmatter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 0.85em;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-interface-theme);
+}
+
+.markdown-preview-view .reading-frontmatter-toggle:hover {
+  color: var(--text-normal);
+}
+
+.markdown-preview-view .reading-frontmatter-properties {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--divider-color);
+}
+
+.markdown-preview-view .reading-frontmatter-property {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 0.85em;
+  font-family: var(--font-interface-theme);
+}
+
+.markdown-preview-view .reading-frontmatter-key {
+  color: var(--text-accent);
+  font-weight: 600;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.markdown-preview-view .reading-frontmatter-key::after {
+  content: ':';
+}
+
+.markdown-preview-view .reading-frontmatter-value {
+  color: var(--text-normal);
+}
+
 /* ---- Mermaid diagrams ---- */
 .markdown-preview-view .mermaid-diagram {
   text-align: center;
