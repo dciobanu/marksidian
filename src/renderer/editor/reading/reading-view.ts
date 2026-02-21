@@ -3,6 +3,7 @@ import markdownItMark from 'markdown-it-mark';
 import markdownItFootnote from 'markdown-it-footnote';
 import markdownItFrontMatter from 'markdown-it-front-matter';
 import markdownItKatex from '@vscode/markdown-it-katex';
+import mermaid from 'mermaid';
 
 const md = new MarkdownIt({
   html: true,
@@ -69,10 +70,56 @@ md.use((md) => {
   });
 });
 
+// Mermaid — render ```mermaid code blocks as placeholder divs for async post-processing
+const defaultFence = md.renderer.rules.fence!.bind(md.renderer.rules);
+
+md.renderer.rules.fence = function (tokens, idx, options, env, self) {
+  const token = tokens[idx];
+  if (token.info.trim().toLowerCase() === 'mermaid') {
+    const source = token.content.trim();
+    const encoded = source
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return `<div class="mermaid-diagram" data-mermaid-source="${encoded}"><pre><code>${encoded}</code></pre></div>`;
+  }
+  return defaultFence(tokens, idx, options, env, self);
+};
+
+function getMermaidTheme(): string {
+  return document.body.classList.contains('theme-dark') ? 'dark' : 'default';
+}
+
 export function renderMarkdown(content: string): string {
   return md.render(content);
 }
 
-export function showReadingView(container: HTMLElement, content: string): void {
+export async function showReadingView(container: HTMLElement, content: string): Promise<void> {
+  // Reinitialize mermaid with current theme each time
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    theme: getMermaidTheme(),
+  });
+
   container.innerHTML = renderMarkdown(content);
+
+  // Post-process mermaid diagrams
+  const diagrams = container.querySelectorAll<HTMLElement>('.mermaid-diagram');
+  for (let i = 0; i < diagrams.length; i++) {
+    const el = diagrams[i];
+    const source = el.dataset.mermaidSource;
+    if (!source) continue;
+
+    try {
+      const { svg } = await mermaid.render(`mermaid-diagram-${i}`, source);
+      el.innerHTML = svg;
+      el.classList.add('mermaid-rendered');
+    } catch (err) {
+      // On error, keep the raw source visible as fallback
+      el.classList.add('mermaid-error');
+      console.warn('Mermaid rendering failed:', err);
+    }
+  }
 }

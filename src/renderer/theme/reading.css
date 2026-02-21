@@ -183,3 +183,19 @@
 .markdown-preview-view sup a {
   color: var(--text-accent);
 }
+
+/* ---- Mermaid diagrams ---- */
+.markdown-preview-view .mermaid-diagram {
+  text-align: center;
+  margin: 1.5em 0;
+  overflow-x: auto;
+}
+
+.markdown-preview-view .mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-preview-view .mermaid-diagram.mermaid-error pre {
+  border-left: 3px solid var(--color-red);
+}

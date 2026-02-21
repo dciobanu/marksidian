@@ -37,6 +37,7 @@
     "markdown-it-footnote": "^4.0.0",
     "markdown-it-front-matter": "^0.2.4",
     "markdown-it-mark": "^4.0.0",
+    "mermaid": "^11.12.3",
     "prismjs": "^1.29.0"
   },
   "devDependencies": {

@@ -93,11 +93,11 @@ updateStatusBar({
 });
 
 // Switch between editor and reading view
-function switchToMode(mode: EditorMode): void {
+async function switchToMode(mode: EditorMode): Promise<void> {
   if (mode === 'reading') {
     editorContainer.style.display = 'none';
     readingContainer.style.display = '';
-    showReadingView(readingContent, getEditorContent());
+    await showReadingView(readingContent, getEditorContent());
     setMode(mode);
   } else {
     readingContainer.style.display = 'none';
@@ -179,19 +179,19 @@ if (window.marksidian) {
   });
 
   // Menu: Toggle mode (Live Preview <-> Source)
-  window.marksidian.onMenuToggleMode(() => {
+  window.marksidian.onMenuToggleMode(async () => {
     const current = getMode();
     if (current === 'reading') {
-      switchToMode('live');
+      await switchToMode('live');
     } else {
-      switchToMode(current === 'live' ? 'source' : 'live');
+      await switchToMode(current === 'live' ? 'source' : 'live');
     }
   });
 
   // Menu: Toggle reading mode
-  window.marksidian.onMenuToggleReading(() => {
+  window.marksidian.onMenuToggleReading(async () => {
     const current = getMode();
-    switchToMode(current === 'reading' ? 'live' : 'reading');
+    await switchToMode(current === 'reading' ? 'live' : 'reading');
   });
 
   // Menu: Toggle readable line width
@@ -212,8 +212,8 @@ if (window.marksidian) {
   });
 
   // Set mode from main process
-  window.marksidian.onSetMode((data) => {
-    switchToMode(data.mode);
+  window.marksidian.onSetMode(async (data) => {
+    await switchToMode(data.mode);
   });
 
   // Set theme from main process
@@ -238,8 +238,8 @@ if (window.marksidian) {
   });
 
   // Session: restore state on launch
-  window.marksidian.onRestoreState((data) => {
-    switchToMode(data.editorMode);
+  window.marksidian.onRestoreState(async (data) => {
+    await switchToMode(data.editorMode);
     zoomLevel = data.zoomLevel;
     applyZoom();
     setCursorOffset(data.cursorOffset);

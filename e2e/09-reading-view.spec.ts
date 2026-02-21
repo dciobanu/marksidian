@@ -479,6 +479,115 @@ test.describe('Reading view special features', () => {
   });
 });
 
+// ─── Mermaid diagram rendering ──────────────────────────────
+
+test.describe('Mermaid diagram rendering', () => {
+  test('mermaid diagram renders as SVG in reading view', async () => {
+    const content = loadFixtureRaw('Algorithms and Data Structures.md');
+    await setDoc(page, content);
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('reading'));
+
+    // Mermaid rendering is async — poll for SVG to appear
+    await expect.poll(async () => {
+      return await page.evaluate(() =>
+        document.querySelectorAll('#reading-content .mermaid-diagram svg').length
+      );
+    }, { timeout: 10000 }).toBeGreaterThanOrEqual(1);
+
+    await showLive(page);
+  });
+
+  test('mermaid SVG contains expected node text', async () => {
+    const content = loadFixtureRaw('Algorithms and Data Structures.md');
+    await setDoc(page, content);
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('reading'));
+
+    await expect.poll(async () => {
+      return await page.evaluate(() =>
+        document.querySelectorAll('#reading-content .mermaid-diagram svg').length
+      );
+    }, { timeout: 10000 }).toBeGreaterThanOrEqual(1);
+
+    const svgText = await page.evaluate(() => {
+      const svg = document.querySelector('#reading-content .mermaid-diagram svg');
+      return svg?.textContent || '';
+    });
+    expect(svgText).toContain('Idea');
+    expect(svgText).toContain('Design');
+    expect(svgText).toContain('Implementation');
+
+    await showLive(page);
+  });
+
+  test('raw mermaid syntax is not visible after rendering', async () => {
+    const md = '```mermaid\ngraph TD\n    A-->B\n```';
+    await setDoc(page, md);
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('reading'));
+
+    await expect.poll(async () => {
+      return await page.evaluate(() =>
+        document.querySelectorAll('#reading-content .mermaid-diagram svg').length
+      );
+    }, { timeout: 10000 }).toBe(1);
+
+    // The rendered container should have SVG, not raw code
+    const html = await page.evaluate(() =>
+      document.querySelector('#reading-content .mermaid-diagram')!.innerHTML
+    );
+    expect(html).toContain('<svg');
+    expect(html).not.toContain('graph TD');
+
+    await showLive(page);
+  });
+
+  test('invalid mermaid syntax shows error gracefully', async () => {
+    const md = '```mermaid\ninvalid diagram %%@#$ syntax\n```';
+    await setDoc(page, md);
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('reading'));
+
+    // Wait for mermaid to attempt rendering and fail
+    await expect.poll(async () => {
+      return await page.evaluate(() =>
+        document.querySelectorAll('#reading-content .mermaid-diagram.mermaid-error').length
+      );
+    }, { timeout: 10000 }).toBe(1);
+
+    // The error div should still show the raw source
+    const text = await page.evaluate(() =>
+      document.querySelector('#reading-content .mermaid-diagram.mermaid-error')?.textContent || ''
+    );
+    expect(text).toContain('invalid diagram');
+
+    await showLive(page);
+  });
+
+  test('multiple mermaid diagrams render independently', async () => {
+    const md = [
+      '```mermaid',
+      'graph LR',
+      '    A-->B',
+      '```',
+      '',
+      'Some text between.',
+      '',
+      '```mermaid',
+      'graph TD',
+      '    C-->D',
+      '```',
+    ].join('\n');
+    await setDoc(page, md);
+    await page.evaluate(() => (window as any).__marksidian.switchToMode('reading'));
+
+    await expect.poll(async () => {
+      return await page.evaluate(() =>
+        document.querySelectorAll('#reading-content .mermaid-diagram svg').length
+      );
+    }, { timeout: 10000 }).toBe(2);
+
+    await showLive(page);
+  });
+});
+
 // ─── Mode switching preserves content ────────────────────────
 
 test.describe('Mode switching round-trips', () => {
