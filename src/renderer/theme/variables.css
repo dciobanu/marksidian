@@ -71,7 +71,7 @@
 
   --divider-color: var(--color-base-20);
 
-  --file-line-width: 700px;
+  --file-line-width: 80ch;
 }
 
 .theme-dark {
