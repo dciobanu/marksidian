@@ -1,6 +1,6 @@
 {
   "name": "marksidian",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A Markdown editor with Obsidian-style Live Preview",
   "main": "dist/main/main.js",
   "author": "Marksidian Contributors",
