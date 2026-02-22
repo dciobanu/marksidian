@@ -14,6 +14,7 @@ import { livePreviewExtensions } from './live-preview/decorations';
 import { customKeymap } from './keymaps';
 
 export const modeCompartment = new Compartment();
+export const headingIndentCompartment = new Compartment();
 
 /**
  * Override for defaultHighlightStyle's heading rule.
@@ -63,5 +64,6 @@ export function allExtensions(): Extension[] {
   return [
     ...baseExtensions(),
     modeCompartment.of(livePreviewExtensions()),
+    headingIndentCompartment.of([]),
   ];
 }

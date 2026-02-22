@@ -20,6 +20,7 @@ import {
   setFilePathForWindow,
 } from './window-manager';
 import { buildMenu } from './menu';
+import { getHeadingIndentSettings, saveHeadingIndentSettings } from './heading-indent-manager';
 import { IPC_INVOKE, IPC_SEND, IPC_PUSH } from '../shared/ipc-channels';
 import { loadSession, saveSession, collectSessionState } from './session-manager';
 
@@ -280,4 +281,17 @@ ipcMain.handle(IPC_INVOKE.THEME_SET_ACTIVE, async (_event, { name }: { name: str
 
 ipcMain.handle(IPC_INVOKE.THEME_GET_CSS_PATH, async (_event, { name }: { name: string }) => {
   return getThemeCssPath(name);
+});
+
+// ── Heading indent ───────────────────────────────────────────
+
+ipcMain.handle(IPC_INVOKE.HEADING_INDENT_GET_SETTINGS, async () => {
+  return getHeadingIndentSettings();
+});
+
+ipcMain.handle(IPC_INVOKE.HEADING_INDENT_SET_SETTINGS, async (_event, settings: import('../shared/types').HeadingIndentSettings) => {
+  await saveHeadingIndentSettings(settings);
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send(IPC_PUSH.HEADING_INDENT_CHANGED, settings);
+  }
 });

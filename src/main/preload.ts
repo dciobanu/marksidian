@@ -72,4 +72,12 @@ contextBridge.exposeInMainWorld('marksidian', {
   // Settings
   onMenuOpenSettings: (cb: () => void) =>
     ipcRenderer.on('menu:open-settings', () => cb()),
+
+  // Heading indent
+  getHeadingIndentSettings: () =>
+    ipcRenderer.invoke(IPC_INVOKE.HEADING_INDENT_GET_SETTINGS),
+  setHeadingIndentSettings: (settings: import('../shared/types').HeadingIndentSettings) =>
+    ipcRenderer.invoke(IPC_INVOKE.HEADING_INDENT_SET_SETTINGS, settings),
+  onHeadingIndentChanged: (cb: (settings: import('../shared/types').HeadingIndentSettings) => void) =>
+    ipcRenderer.on(IPC_PUSH.HEADING_INDENT_CHANGED, (_event, data) => cb(data)),
 });

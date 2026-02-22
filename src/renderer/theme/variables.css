@@ -72,6 +72,13 @@
   --divider-color: var(--color-base-20);
 
   --file-line-width: 80ch;
+
+  --heading-indent-h1: 30px;
+  --heading-indent-h2: 50px;
+  --heading-indent-h3: 70px;
+  --heading-indent-h4: 90px;
+  --heading-indent-h5: 110px;
+  --heading-indent-h6: 130px;
 }
 
 .theme-dark {

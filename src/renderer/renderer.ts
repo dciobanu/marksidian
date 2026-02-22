@@ -14,14 +14,15 @@ import {
   getScrollTop,
   setCursorOffset,
   setScrollTop,
+  setHeadingIndentSettings as setEditorHeadingIndent,
 } from './editor/editor';
 import { setFileDir, getFileDir } from './editor/live-preview/image';
-import { showReadingView } from './editor/reading/reading-view';
+import { showReadingView, setReadingHeadingIndentSettings } from './editor/reading/reading-view';
 import { updateStatusBar } from './ui/status-bar';
 import { setupContainer, toggleReadableLineWidth } from './ui/container';
 import { loadActiveTheme, applyThemeCss, removeThemeCss } from './ui/theme-loader';
 import { openThemeModal } from './ui/theme-modal';
-import type { EditorMode } from '../shared/types';
+import type { EditorMode, HeadingIndentSettings } from '../shared/types';
 
 // Initialize
 const editorContainer = document.getElementById('editor-container')!;
@@ -281,6 +282,22 @@ if (window.marksidian) {
   window.marksidian.onMenuOpenSettings(() => {
     openThemeModal();
   });
+
+  // Heading indent: load on startup and listen for changes
+  function applyHeadingIndent(settings: HeadingIndentSettings): void {
+    const root = document.documentElement;
+    root.style.setProperty('--heading-indent-h1', `${settings.h1}px`);
+    root.style.setProperty('--heading-indent-h2', `${settings.h2}px`);
+    root.style.setProperty('--heading-indent-h3', `${settings.h3}px`);
+    root.style.setProperty('--heading-indent-h4', `${settings.h4}px`);
+    root.style.setProperty('--heading-indent-h5', `${settings.h5}px`);
+    root.style.setProperty('--heading-indent-h6', `${settings.h6}px`);
+    setEditorHeadingIndent(settings);
+    setReadingHeadingIndentSettings(settings);
+  }
+
+  window.marksidian.getHeadingIndentSettings().then(applyHeadingIndent);
+  window.marksidian.onHeadingIndentChanged(applyHeadingIndent);
 }
 
 // Right-click context menu

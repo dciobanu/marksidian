@@ -54,6 +54,19 @@ export interface ThemeSettings {
   activeTheme: string | null;
 }
 
+// ── Heading indent ───────────────────────────────────────────
+
+export interface HeadingIndentSettings {
+  enabledInEditor: boolean;
+  enabledInReading: boolean;
+  h1: number;
+  h2: number;
+  h3: number;
+  h4: number;
+  h5: number;
+  h6: number;
+}
+
 export interface MarksidianAPI {
   save: (content: string) => Promise<SaveResult>;
   saveAs: (content: string) => Promise<SaveResult>;
@@ -88,6 +101,11 @@ export interface MarksidianAPI {
 
   // Settings
   onMenuOpenSettings: (cb: () => void) => void;
+
+  // Heading indent
+  getHeadingIndentSettings: () => Promise<HeadingIndentSettings>;
+  setHeadingIndentSettings: (settings: HeadingIndentSettings) => Promise<void>;
+  onHeadingIndentChanged: (cb: (settings: HeadingIndentSettings) => void) => void;
 }
 
 declare global {

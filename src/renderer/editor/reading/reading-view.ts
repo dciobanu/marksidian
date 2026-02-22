@@ -4,6 +4,7 @@ import markdownItFootnote from 'markdown-it-footnote';
 import markdownItFrontMatter from 'markdown-it-front-matter';
 import markdownItKatex from '@vscode/markdown-it-katex';
 import mermaid from 'mermaid';
+import type { HeadingIndentSettings } from '../../../shared/types';
 
 const md = new MarkdownIt({
   html: true,
@@ -118,6 +119,51 @@ function buildFrontmatterHTML(yaml: string): string {
     `</div>`;
 }
 
+// ── Heading indent for reading view ──────────────────────────
+
+let headingIndentSettings: HeadingIndentSettings | null = null;
+
+export function setReadingHeadingIndentSettings(settings: HeadingIndentSettings): void {
+  headingIndentSettings = settings;
+}
+
+const headingTags: Record<string, keyof HeadingIndentSettings> = {
+  H1: 'h1', H2: 'h2', H3: 'h3', H4: 'h4', H5: 'h5', H6: 'h6',
+};
+
+// Maps a heading tag to its PARENT level's settings key.
+// H1 has no parent (indent 0), H2's parent is H1, H3's parent is H2, etc.
+const parentIndentKeys: Record<string, keyof HeadingIndentSettings> = {
+  H2: 'h1', H3: 'h2', H4: 'h3', H5: 'h4', H6: 'h5',
+};
+
+function applyReadingHeadingIndent(container: HTMLElement): void {
+  if (!headingIndentSettings || !headingIndentSettings.enabledInReading) return;
+
+  const settings = headingIndentSettings;
+  // contentIndent: the indent applied to content under the current heading
+  let contentIndent = 0;
+
+  for (let i = 0; i < container.children.length; i++) {
+    const el = container.children[i] as HTMLElement;
+    const key = headingTags[el.tagName];
+    if (key) {
+      // Heading sits at its PARENT level's indent (level N-1), not the
+      // previous contentIndent — this avoids the bug where H2 after H3
+      // would inherit H3's deeper indent.
+      const parentKey = parentIndentKeys[el.tagName];
+      const headingIndent = parentKey ? (settings[parentKey] as number) : 0;
+      if (headingIndent > 0) {
+        el.style.paddingLeft = `${headingIndent}px`;
+      }
+      // Update contentIndent for subsequent content lines
+      contentIndent = settings[key] as number;
+    } else if (contentIndent > 0) {
+      el.style.paddingLeft = `${contentIndent}px`;
+    }
+  }
+}
+
 export function renderMarkdown(content: string): string {
   capturedFrontmatter = '';
   return md.render(content);
@@ -180,4 +226,7 @@ export async function showReadingView(container: HTMLElement, content: string, f
       img.src = 'marksidian-asset://' + resolved;
     }
   }
+
+  // Post-process heading level indent
+  applyReadingHeadingIndent(container);
 }

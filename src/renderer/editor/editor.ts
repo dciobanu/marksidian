@@ -1,8 +1,9 @@
 import { EditorView } from '@codemirror/view';
 import { EditorState, Text } from '@codemirror/state';
-import { allExtensions, modeCompartment, sourceExtensions } from './extensions';
+import { allExtensions, modeCompartment, headingIndentCompartment, sourceExtensions } from './extensions';
 import { livePreviewExtensions } from './live-preview/decorations';
-import type { EditorMode } from '../../shared/types';
+import { headingIndentConfig, headingIndentPlugin } from './live-preview/heading-indent';
+import type { EditorMode, HeadingIndentSettings } from '../../shared/types';
 
 let editorView: EditorView | null = null;
 let savedDoc: Text = Text.empty;
@@ -131,4 +132,23 @@ export function setScrollTop(scrollTop: number): void {
       editorView.scrollDOM.scrollTop = scrollTop;
     }
   });
+}
+
+// ── Heading indent ────────────────────────────────────────────
+
+export function setHeadingIndentSettings(settings: HeadingIndentSettings): void {
+  if (!editorView) return;
+
+  if (settings.enabledInEditor) {
+    editorView.dispatch({
+      effects: headingIndentCompartment.reconfigure([
+        headingIndentConfig.of(settings),
+        headingIndentPlugin,
+      ]),
+    });
+  } else {
+    editorView.dispatch({
+      effects: headingIndentCompartment.reconfigure([]),
+    });
+  }
 }

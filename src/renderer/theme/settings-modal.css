@@ -284,3 +284,43 @@
 @keyframes settings-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Heading indent settings ───────────────────────────────── */
+
+.settings-heading-indent {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.settings-toggle-row,
+.settings-number-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-family: var(--font-interface-theme);
+  font-size: 0.9em;
+}
+
+.settings-toggle-row input[type="checkbox"] {
+  accent-color: var(--interactive-accent);
+  width: 16px;
+  height: 16px;
+}
+
+.settings-number-input {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary-alt);
+  color: var(--text-normal);
+  font-size: 0.9em;
+  text-align: right;
+}
+
+.settings-number-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}

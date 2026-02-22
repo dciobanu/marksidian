@@ -2,11 +2,12 @@
  * Settings / Appearance modal — browse, install, and activate Obsidian community themes.
  */
 
-import type { ThemeRegistryEntry, InstalledTheme } from '../../shared/types';
+import type { ThemeRegistryEntry, InstalledTheme, HeadingIndentSettings } from '../../shared/types';
 import { applyThemeCss, removeThemeCss } from './theme-loader';
 
 let overlayEl: HTMLElement | null = null;
 let registryCache: ThemeRegistryEntry[] | null = null;
+let pendingIndentSave: (() => void) | null = null;
 
 export function isSettingsOpen(): boolean {
   return overlayEl !== null;
@@ -14,6 +15,11 @@ export function isSettingsOpen(): boolean {
 
 export function closeThemeModal(): void {
   if (overlayEl) {
+    // Save any pending heading indent settings before removing DOM
+    if (pendingIndentSave) {
+      pendingIndentSave();
+      pendingIndentSave = null;
+    }
     overlayEl.remove();
     overlayEl = null;
   }
@@ -102,6 +108,9 @@ async function renderModalContent(body: HTMLElement): Promise<void> {
 
   activeSection.appendChild(row);
   body.appendChild(activeSection);
+
+  // ── Heading indent section ──
+  await renderHeadingIndentSection(body);
 
   // ── Search + gallery ──
   const searchRow = document.createElement('div');
@@ -322,4 +331,87 @@ function createPlaceholder(): HTMLElement {
   placeholder.className = 'settings-theme-screenshot-placeholder';
   placeholder.textContent = 'No preview';
   return placeholder;
+}
+
+// ── Heading indent settings section ──────────────────────────
+
+async function renderHeadingIndentSection(body: HTMLElement): Promise<void> {
+  const settings = await window.marksidian.getHeadingIndentSettings();
+
+  const section = document.createElement('div');
+  section.className = 'settings-heading-indent';
+
+  const sectionLabel = document.createElement('div');
+  sectionLabel.className = 'settings-active-theme-label';
+  sectionLabel.textContent = 'Heading Level Indent';
+  section.appendChild(sectionLabel);
+
+  const save = () => window.marksidian.setHeadingIndentSettings(settings);
+
+  // Register save callback so closeThemeModal can flush pending changes
+  pendingIndentSave = save;
+
+  // Editor toggle
+  section.appendChild(createToggleRow('Enable in editing mode', settings.enabledInEditor, (v) => {
+    settings.enabledInEditor = v;
+    save();
+  }));
+
+  // Reading toggle
+  section.appendChild(createToggleRow('Enable in reading view', settings.enabledInReading, (v) => {
+    settings.enabledInReading = v;
+    save();
+  }));
+
+  // Per-level inputs
+  const levels: (keyof HeadingIndentSettings)[] = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+  for (const key of levels) {
+    section.appendChild(createNumberRow(
+      `Content under ${key.toUpperCase()}`,
+      settings[key] as number,
+      (v) => { (settings as any)[key] = v; save(); },
+    ));
+  }
+
+  body.appendChild(section);
+}
+
+function createToggleRow(label: string, checked: boolean, onChange: (v: boolean) => void): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'settings-toggle-row';
+
+  const span = document.createElement('span');
+  span.textContent = label;
+  row.appendChild(span);
+
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = checked;
+  input.addEventListener('change', () => onChange(input.checked));
+  row.appendChild(input);
+
+  return row;
+}
+
+function createNumberRow(label: string, value: number, onChange: (v: number) => void): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'settings-number-row';
+
+  const span = document.createElement('span');
+  span.textContent = label;
+  row.appendChild(span);
+
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'settings-number-input';
+  input.value = String(value);
+  input.min = '0';
+  input.max = '500';
+  input.addEventListener('input', () => {
+    const num = parseInt(input.value, 10);
+    if (!isNaN(num) && num >= 0) onChange(num);
+  });
+  row.appendChild(input);
+
+  return row;
 }
