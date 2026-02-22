@@ -132,6 +132,7 @@ async function restoreSession(session: import('../shared/types').SessionData): P
               scrollTop: ws.scrollTop,
               editorMode: ws.editorMode,
               zoomLevel: ws.zoomLevel,
+              outlineVisible: ws.outlineVisible,
             });
           }, 100);
         });
@@ -144,6 +145,7 @@ async function restoreSession(session: import('../shared/types').SessionData): P
           scrollTop: ws.scrollTop,
           editorMode: ws.editorMode,
           zoomLevel: ws.zoomLevel,
+          outlineVisible: ws.outlineVisible,
         });
       });
     }

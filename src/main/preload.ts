@@ -39,6 +39,8 @@ contextBridge.exposeInMainWorld('marksidian', {
     ipcRenderer.on('menu:toggle-line-width', (_event, data) => cb(data)),
   onMenuZoom: (cb: (data: { direction: string }) => void) =>
     ipcRenderer.on('menu:zoom', (_event, data) => cb(data)),
+  onMenuToggleOutline: (cb: (data: { enabled: boolean }) => void) =>
+    ipcRenderer.on('menu:toggle-outline', (_event, data) => cb(data)),
 
   getFilePath: () =>
     ipcRenderer.invoke('file:get-path'),

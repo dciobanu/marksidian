@@ -128,6 +128,16 @@ export function buildMenu(): void {
             if (win) win.webContents.send('menu:toggle-line-width', { enabled: menuItem.checked });
           },
         },
+        {
+          label: 'Show Outline',
+          type: 'checkbox',
+          checked: true,
+          accelerator: 'CmdOrCtrl+Shift+O',
+          click: (menuItem) => {
+            const win = getFocusedWindow();
+            if (win) win.webContents.send('menu:toggle-outline', { enabled: menuItem.checked });
+          },
+        },
         { type: 'separator' },
         {
           label: 'Zoom In',

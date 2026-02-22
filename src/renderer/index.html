@@ -13,15 +13,19 @@
   <link rel="stylesheet" href="theme/reading.css">
   <link rel="stylesheet" href="theme/status-bar.css">
   <link rel="stylesheet" href="theme/settings-modal.css">
+  <link rel="stylesheet" href="theme/outline.css">
 </head>
 <body class="theme-light">
   <div class="app-container">
     <div class="workspace">
-      <div class="markdown-source-view is-live-preview" id="editor-container">
-        <!-- CodeMirror 6 editor mounts here -->
-      </div>
-      <div class="markdown-reading-view" id="reading-container" style="display: none;">
-        <div class="markdown-preview-view markdown-rendered" id="reading-content">
+      <div class="outline-panel" id="outline-panel"></div>
+      <div class="workspace-content">
+        <div class="markdown-source-view is-live-preview" id="editor-container">
+          <!-- CodeMirror 6 editor mounts here -->
+        </div>
+        <div class="markdown-reading-view" id="reading-container" style="display: none;">
+          <div class="markdown-preview-view markdown-rendered" id="reading-content">
+          </div>
         </div>
       </div>
     </div>

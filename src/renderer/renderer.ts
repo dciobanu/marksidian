@@ -22,6 +22,19 @@ import { updateStatusBar } from './ui/status-bar';
 import { setupContainer, toggleReadableLineWidth } from './ui/container';
 import { loadActiveTheme, applyThemeCss, removeThemeCss } from './ui/theme-loader';
 import { openThemeModal } from './ui/theme-modal';
+import {
+  createOutlinePanel,
+  showOutlinePanel,
+  hideOutlinePanel,
+  isOutlineVisible,
+  setOutlineMode,
+  setOutlineNavigateEditor,
+  setOutlineNavigateReading,
+  scheduleOutlineUpdate,
+  forceOutlineUpdate,
+  setActiveHeadingIndex,
+  getHeadings,
+} from './ui/outline-panel';
 import type { EditorMode, HeadingIndentSettings } from '../shared/types';
 
 // Initialize
@@ -57,6 +70,39 @@ prefersDark.addEventListener('change', (e) => {
 // Create the editor
 createEditor(editorContainer);
 
+// ── Typography normalization (MarkdownIt typographer converts ASCII → Unicode) ──
+function normalizeTypography(s: string): string {
+  return s
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2014/g, '---')
+    .replace(/\u2013/g, '--')
+    .replace(/\u2026/g, '...');
+}
+
+// Create outline panel
+createOutlinePanel();
+setOutlineNavigateEditor((from) => {
+  setCursorOffset(from);
+  // Focus the editor after navigation
+  const view = getEditorView();
+  if (view) view.focus();
+});
+setOutlineNavigateReading((text, level) => {
+  const tag = `H${level}`;
+  const headings = readingContent.querySelectorAll(tag);
+  const normalizedText = normalizeTypography(text.trim());
+  for (const h of headings) {
+    const headingText = normalizeTypography(h.textContent?.trim() ?? '');
+    if (headingText === normalizedText) {
+      h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Update active heading in outline after navigation
+      setTimeout(() => updateReadingActiveHeading(), 100);
+      break;
+    }
+  }
+});
+
 // Expose editor API for E2E testing (switchToMode added below after definition)
 (window as any).__marksidian = {
   getEditorView,
@@ -72,6 +118,10 @@ createEditor(editorContainer);
   getScrollTop,
   setCursorOffset,
   setScrollTop,
+  showOutlinePanel,
+  hideOutlinePanel,
+  isOutlineVisible,
+  forceOutlineUpdate,
 };
 
 // Track zoom level
@@ -82,7 +132,7 @@ function applyZoom(): void {
   document.documentElement.style.setProperty('--font-text-size', `${size}px`);
 }
 
-// Update status bar on editor changes
+// Update status bar and outline on editor changes
 setUpdateListener(() => {
   const pos = getCursorPosition();
   const words = getWordCount();
@@ -97,6 +147,10 @@ setUpdateListener(() => {
   if (window.marksidian) {
     window.marksidian.notifyContentChanged(isDirty());
   }
+
+  // Update outline panel (debounced)
+  const view = getEditorView();
+  if (view) scheduleOutlineUpdate(view);
 });
 
 // Initial status bar update
@@ -135,10 +189,50 @@ async function switchToMode(mode: EditorMode): Promise<void> {
     wordCount: getWordCount(),
     mode,
   });
+
+  // Update outline mode so clicks navigate correctly
+  setOutlineMode(mode);
+  const view = getEditorView();
+  if (view) forceOutlineUpdate(view);
 }
 
 // Add switchToMode to test API
 (window as any).__marksidian.switchToMode = switchToMode;
+
+// ── Reading view scroll → outline active heading tracking ────
+let readingScrollTimer: ReturnType<typeof setTimeout> | null = null;
+
+function updateReadingActiveHeading(): void {
+  if (!isOutlineVisible()) return;
+  const headings = getHeadings();
+  if (headings.length === 0) return;
+
+  const headingEls = readingContent.querySelectorAll('h1, h2, h3, h4, h5, h6');
+  if (headingEls.length === 0) return;
+
+  const containerRect = readingContainer.getBoundingClientRect();
+  const threshold = containerRect.top + 20;
+
+  let activeIndex = -1;
+  let outlineIdx = 0;
+  for (const el of headingEls) {
+    if (outlineIdx >= headings.length) break;
+    const rect = el.getBoundingClientRect();
+    if (rect.top <= threshold) {
+      activeIndex = outlineIdx;
+    }
+    outlineIdx++;
+  }
+
+  if (activeIndex >= 0) {
+    setActiveHeadingIndex(activeIndex);
+  }
+}
+
+readingContainer.addEventListener('scroll', () => {
+  if (readingScrollTimer) clearTimeout(readingScrollTimer);
+  readingScrollTimer = setTimeout(updateReadingActiveHeading, 50);
+}, { passive: true });
 
 // Save helper
 async function doSave(): Promise<void> {
@@ -214,6 +308,17 @@ if (window.marksidian) {
     toggleReadableLineWidth(data.enabled);
   });
 
+  // Menu: Toggle outline panel
+  window.marksidian.onMenuToggleOutline((data) => {
+    if (data.enabled) {
+      showOutlinePanel();
+      const view = getEditorView();
+      if (view) forceOutlineUpdate(view);
+    } else {
+      hideOutlinePanel();
+    }
+  });
+
   // Menu: Zoom
   window.marksidian.onMenuZoom((data) => {
     if (data.direction === 'in') {
@@ -249,6 +354,7 @@ if (window.marksidian) {
       scrollTop: getScrollTop(),
       editorMode: getMode(),
       zoomLevel,
+      outlineVisible: isOutlineVisible(),
     });
   });
 
@@ -259,6 +365,14 @@ if (window.marksidian) {
     applyZoom();
     setCursorOffset(data.cursorOffset);
     setScrollTop(data.scrollTop);
+    // Restore outline visibility (default is visible; hide only if explicitly false)
+    if (data.outlineVisible === false) {
+      hideOutlinePanel();
+    } else {
+      showOutlinePanel();
+      const view = getEditorView();
+      if (view) forceOutlineUpdate(view);
+    }
   });
 
   // Theme: load active theme on startup

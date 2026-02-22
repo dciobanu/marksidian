@@ -9,6 +9,7 @@ export interface RendererSessionState {
   scrollTop: number;
   editorMode: EditorMode;
   zoomLevel: number;
+  outlineVisible?: boolean;
 }
 
 /** Full per-window state persisted in session.json. */
@@ -82,6 +83,7 @@ export interface MarksidianAPI {
   onMenuToggleReading: (cb: () => void) => void;
   onMenuToggleLineWidth: (cb: (data: { enabled: boolean }) => void) => void;
   onMenuZoom: (cb: (data: { direction: string }) => void) => void;
+  onMenuToggleOutline: (cb: (data: { enabled: boolean }) => void) => void;
   getFilePath: () => Promise<string | null>;
 
   // Session persistence

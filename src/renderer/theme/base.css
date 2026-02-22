@@ -23,6 +23,13 @@ html, body {
 }
 
 .workspace {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+}
+
+.workspace-content {
   flex: 1;
   overflow: hidden;
   position: relative;
