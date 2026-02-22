@@ -35,7 +35,7 @@ import {
   setActiveHeadingIndex,
   getHeadings,
 } from './ui/outline-panel';
-import type { EditorMode, HeadingIndentSettings } from '../shared/types';
+import type { EditorMode, HeadingIndentSettings, ThemeMode } from '../shared/types';
 
 // Initialize
 const editorContainer = document.getElementById('editor-container')!;
@@ -57,15 +57,39 @@ readingContent.addEventListener('click', (e) => {
   }
 });
 
-// Apply theme based on system preference
+// ── Light/Dark theme mode ────────────────────────────────────
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
-document.body.classList.toggle('theme-dark', prefersDark.matches);
-document.body.classList.toggle('theme-light', !prefersDark.matches);
+let currentThemeMode: ThemeMode = 'system';
 
-prefersDark.addEventListener('change', (e) => {
-  document.body.classList.toggle('theme-dark', e.matches);
-  document.body.classList.toggle('theme-light', !e.matches);
-});
+function applySystemTheme(): void {
+  document.body.classList.toggle('theme-dark', prefersDark.matches);
+  document.body.classList.toggle('theme-light', !prefersDark.matches);
+}
+
+function onSystemThemeChange(e: MediaQueryListEvent): void {
+  if (currentThemeMode === 'system') {
+    document.body.classList.toggle('theme-dark', e.matches);
+    document.body.classList.toggle('theme-light', !e.matches);
+  }
+}
+
+function applyThemeMode(mode: ThemeMode): void {
+  currentThemeMode = mode;
+  if (mode === 'dark') {
+    document.body.classList.add('theme-dark');
+    document.body.classList.remove('theme-light');
+  } else if (mode === 'light') {
+    document.body.classList.add('theme-light');
+    document.body.classList.remove('theme-dark');
+  } else {
+    // 'system' — follow OS preference
+    applySystemTheme();
+  }
+}
+
+// Start with system preference; load saved mode asynchronously
+applySystemTheme();
+prefersDark.addEventListener('change', onSystemThemeChange);
 
 // Create the editor
 createEditor(editorContainer);
@@ -336,15 +360,14 @@ if (window.marksidian) {
     await switchToMode(data.mode);
   });
 
-  // Set theme from main process
-  window.marksidian.onSetTheme((data) => {
-    if (data.theme === 'dark') {
-      document.body.classList.add('theme-dark');
-      document.body.classList.remove('theme-light');
-    } else if (data.theme === 'light') {
-      document.body.classList.add('theme-light');
-      document.body.classList.remove('theme-dark');
-    }
+  // Theme mode: load saved preference on startup
+  window.marksidian.getThemeModeSettings().then((settings) => {
+    applyThemeMode(settings.mode);
+  });
+
+  // Theme mode: respond to changes from menu
+  window.marksidian.onThemeModeChanged((settings) => {
+    applyThemeMode(settings.mode);
   });
 
   // Session: collect state on quit

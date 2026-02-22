@@ -11,6 +11,8 @@ export const IPC_INVOKE = {
   THEME_GET_CSS_PATH: 'theme:get-css-path',
   HEADING_INDENT_GET_SETTINGS: 'heading-indent:get-settings',
   HEADING_INDENT_SET_SETTINGS: 'heading-indent:set-settings',
+  THEME_MODE_GET: 'theme-mode:get',
+  THEME_MODE_SET: 'theme-mode:set',
 } as const;
 
 // Fire-and-forget (send)
@@ -29,4 +31,5 @@ export const IPC_PUSH = {
   SESSION_RESTORE_STATE: 'session:restore-state',
   THEME_ACTIVE_CHANGED: 'theme:active-changed',
   HEADING_INDENT_CHANGED: 'heading-indent:changed',
+  THEME_MODE_CHANGED: 'theme-mode:changed',
 } as const;

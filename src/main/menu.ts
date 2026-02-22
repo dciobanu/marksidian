@@ -2,12 +2,14 @@ import { app, Menu, dialog, BrowserWindow, shell, MenuItemConstructorOptions } f
 import { createWindow, openFileInWindow, openFileInNewWindow, getFilePathForWindow } from './window-manager';
 import { getRecentFiles } from './file-manager';
 import { IPC_PUSH } from '../shared/ipc-channels';
+import { saveThemeModeSettings } from './theme-mode-manager';
+import type { ThemeMode } from '../shared/types';
 
 function getFocusedWindow(): BrowserWindow | null {
   return BrowserWindow.getFocusedWindow();
 }
 
-export function buildMenu(): void {
+export function buildMenu(themeMode: ThemeMode = 'system'): void {
   const template: MenuItemConstructorOptions[] = [
     {
       label: app.name,
@@ -137,6 +139,45 @@ export function buildMenu(): void {
             const win = getFocusedWindow();
             if (win) win.webContents.send('menu:toggle-outline', { enabled: menuItem.checked });
           },
+        },
+        { type: 'separator' },
+        {
+          label: 'Theme',
+          submenu: [
+            {
+              label: 'Light',
+              type: 'radio',
+              checked: themeMode === 'light',
+              click: () => {
+                saveThemeModeSettings({ mode: 'light' });
+                for (const win of BrowserWindow.getAllWindows()) {
+                  win.webContents.send(IPC_PUSH.THEME_MODE_CHANGED, { mode: 'light' });
+                }
+              },
+            },
+            {
+              label: 'Dark',
+              type: 'radio',
+              checked: themeMode === 'dark',
+              click: () => {
+                saveThemeModeSettings({ mode: 'dark' });
+                for (const win of BrowserWindow.getAllWindows()) {
+                  win.webContents.send(IPC_PUSH.THEME_MODE_CHANGED, { mode: 'dark' });
+                }
+              },
+            },
+            {
+              label: 'Use System Setting',
+              type: 'radio',
+              checked: themeMode === 'system',
+              click: () => {
+                saveThemeModeSettings({ mode: 'system' });
+                for (const win of BrowserWindow.getAllWindows()) {
+                  win.webContents.send(IPC_PUSH.THEME_MODE_CHANGED, { mode: 'system' });
+                }
+              },
+            },
+          ],
         },
         { type: 'separator' },
         {

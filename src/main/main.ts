@@ -21,6 +21,7 @@ import {
 } from './window-manager';
 import { buildMenu } from './menu';
 import { getHeadingIndentSettings, saveHeadingIndentSettings } from './heading-indent-manager';
+import { getThemeModeSettings, saveThemeModeSettings } from './theme-mode-manager';
 import { IPC_INVOKE, IPC_SEND, IPC_PUSH } from '../shared/ipc-channels';
 import { loadSession, saveSession, collectSessionState } from './session-manager';
 
@@ -79,7 +80,9 @@ app.whenReady().then(async () => {
     return net.fetch(`file://${filePath}`);
   });
 
-  buildMenu();
+  // Build menu with saved theme mode
+  const savedThemeMode = await getThemeModeSettings();
+  buildMenu(savedThemeMode.mode);
 
   // Ensure theme storage directory exists
   await ensureThemesDir();
@@ -295,5 +298,18 @@ ipcMain.handle(IPC_INVOKE.HEADING_INDENT_SET_SETTINGS, async (_event, settings: 
   await saveHeadingIndentSettings(settings);
   for (const win of BrowserWindow.getAllWindows()) {
     win.webContents.send(IPC_PUSH.HEADING_INDENT_CHANGED, settings);
+  }
+});
+
+// ── Theme mode (light/dark/system) ──────────────────────────
+
+ipcMain.handle(IPC_INVOKE.THEME_MODE_GET, async () => {
+  return getThemeModeSettings();
+});
+
+ipcMain.handle(IPC_INVOKE.THEME_MODE_SET, async (_event, settings: import('../shared/types').ThemeModeSettings) => {
+  await saveThemeModeSettings(settings);
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send(IPC_PUSH.THEME_MODE_CHANGED, settings);
   }
 });

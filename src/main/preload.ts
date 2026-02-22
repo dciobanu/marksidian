@@ -75,6 +75,14 @@ contextBridge.exposeInMainWorld('marksidian', {
   onMenuOpenSettings: (cb: () => void) =>
     ipcRenderer.on('menu:open-settings', () => cb()),
 
+  // Theme mode (light/dark/system)
+  getThemeModeSettings: () =>
+    ipcRenderer.invoke(IPC_INVOKE.THEME_MODE_GET),
+  setThemeModeSettings: (settings: import('../shared/types').ThemeModeSettings) =>
+    ipcRenderer.invoke(IPC_INVOKE.THEME_MODE_SET, settings),
+  onThemeModeChanged: (cb: (settings: import('../shared/types').ThemeModeSettings) => void) =>
+    ipcRenderer.on(IPC_PUSH.THEME_MODE_CHANGED, (_event, data) => cb(data)),
+
   // Heading indent
   getHeadingIndentSettings: () =>
     ipcRenderer.invoke(IPC_INVOKE.HEADING_INDENT_GET_SETTINGS),

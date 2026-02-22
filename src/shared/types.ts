@@ -55,6 +55,12 @@ export interface ThemeSettings {
   activeTheme: string | null;
 }
 
+// ── Theme mode ───────────────────────────────────────────────
+
+export interface ThemeModeSettings {
+  mode: ThemeMode;
+}
+
 // ── Heading indent ───────────────────────────────────────────
 
 export interface HeadingIndentSettings {
@@ -103,6 +109,11 @@ export interface MarksidianAPI {
 
   // Settings
   onMenuOpenSettings: (cb: () => void) => void;
+
+  // Theme mode (light/dark/system)
+  getThemeModeSettings: () => Promise<ThemeModeSettings>;
+  setThemeModeSettings: (settings: ThemeModeSettings) => Promise<void>;
+  onThemeModeChanged: (cb: (settings: ThemeModeSettings) => void) => void;
 
   // Heading indent
   getHeadingIndentSettings: () => Promise<HeadingIndentSettings>;
